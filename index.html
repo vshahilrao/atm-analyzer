@@ -16,6 +16,10 @@
         button:hover { background: #005999; }
         input[type="file"] { display: none; }
         .summary-box { background: #252526; padding: 12px; border-radius: 6px; margin-top: 15px; border: 1px solid #ffc107; }
+        .stat-badge { display: inline-block; padding: 5px 10px; border-radius: 4px; font-weight: bold; margin-right: 10px; margin-bottom: 8px; }
+        .success-bg { background-color: #1e4620; color: #25d366; border: 1px solid #25d366; }
+        .fail-bg { background-color: #4a1212; color: #ff4d4d; border: 1px solid #ff4d4d; }
+        .total-bg { background-color: #1a334d; color: #00b0ff; border: 1px solid #00b0ff; }
         .status { margin-top: 10px; font-size: 14px; color: #aaa; text-align: center; }
     </style>
 </head>
@@ -24,7 +28,6 @@
     <h2>ATM Field Troubleshooting Utility</h2>
     <p style="font-size: 12px; color: #aaa;">Upload multiple log files OR a single .ZIP folder containing logs.</p>
 
-    <!-- Multiple File & Zip Input -->
     <button onclick="document.getElementById('fileInput').click()">📂 Select Logs or .ZIP File</button>
     <input type="file" id="fileInput" multiple accept=".txt,.log,.zip" onchange="handleFileSelection(this)">
 
@@ -33,21 +36,104 @@
     <div id="results" style="margin-top: 15px;"></div>
 
     <script>
+        // FULL 4D RESPONSE CODES DICTIONARY FROM YOUR SHEET
         const CODES = {
-            "01": "DISPENSED SUCCESSFULLY",
-            "02": "MOTOR TIMEOUT - Check drive belt & motor gear connection",
-            "03": "SENSOR FAILURE - Clean optical sensor array",
-            "11": "CASH JAM - Clear bill transport channel and check cassette 1/2",
-            "13": "SUSPECT CASH PICKEDUP - Inspect note quality and bill validation sensors",
-            "15": "CASSETTE NOT ENABLED - Check DIP switch settings",
-            "45": "CASSETTE INSERTION PROBLEM - Inspect physical guide rails",
-            "84": "I2C COMM ERROR - Re-seat mainboard communication cable"
+            "1": "DISPENSED SUCCESSFULLY", "01": "DISPENSED SUCCESSFULLY",
+            "2": "MOTOR TIMEOUT", "02": "MOTOR TIMEOUT",
+            "3": "SENSOR FAILURE", "03": "SENSOR FAILURE",
+            "4": "MAX TWIN LIMIT EXCEEDED", "04": "MAX TWIN LIMIT EXCEEDED",
+            "5": "PRESENTED SUCCESSFULLY", "05": "PRESENTED SUCCESSFULLY",
+            "6": "PRESENTATION TRAY NOTHOMED", "06": "PRESENTATION TRAY NOTHOMED",
+            "7": "BULKPURGE SUCCESSFULL", "07": "BULKPURGE SUCCESSFULL",
+            "8": "MOTOR TIMEOUT NOTHOMED", "08": "MOTOR TIMEOUT NOTHOMED",
+            "9": "DISPENSER INITIALIZED", "09": "DISPENSER INITIALIZED",
+            "10": "DISPENSER NOTINITIALIZED",
+            "11": "CASH JAM",
+            "12": "NO CASH ON TRAY",
+            "13": "SUSPECT CASH PICKEDUP",
+            "14": "CASH JAM NOTHOMED",
+            "15": "CASSETTE NOT ENABLED",
+            "16": "NO NOTE LIMIT EXCEEDED",
+            "17": "NOTE THRESHOLD NOT SET",
+            "18": "DRIFT ERROR",
+            "19": "CALIB PROFILE MATCH",
+            "20": "CALIBRATION NOT DONE",
+            "21": "CALIB THRES SEL FAILED",
+            "22": "PROFILE ITER LIMIT EXCEEDED",
+            "23": "LESS SAMP ITR EXCEEDED",
+            "24": "CASSETTE TYPE SENSOR FAILURE PULLUP PULLDOWN",
+            "25": "FLASH ERROR",
+            "26": "COUNTING LEFT UPPER DRIFT",
+            "27": "COUNTING LEFT LOWER DRIFT",
+            "28": "COUNTING RIGHT UPPER DRIFT",
+            "29": "COUNTING RIGHT LOWER DRIFT",
+            "30": "REAR SKEW LEFT UPPER DRIFT",
+            "31": "REAR SKEW LEFT LOWER DRIFT",
+            "32": "REAR SKEW RIGHT UPPER DRIFT",
+            "33": "REAR SKEW RIGHT LOWER DRIFT",
+            "34": "PREV TRANS CASH IN TRAY",
+            "35": "DISP INIT SUCCESS PREV CASH BP SUCCESS",
+            "36": "DISP INIT FAIL PREV CASH BP SUCCESS",
+            "37": "DISP INIT FAIL PREV CASH BP FAIL",
+            "38": "PREV TRANS CASH TAKEN",
+            "39": "CARTRIDGE HOMED",
+            "40": "SAFE SHUTTER OPEN FAILS",
+            "41": "SAFE SHUTTER CLOSE FAILS",
+            "42": "CARTRIDGE POSITION ERROR",
+            "43": "CAM POSITION ERROR",
+            "44": "PURGE BIN NOT INSERTED",
+            "45": "CASSETTE INSERTION PROBLEM",
+            "46": "TWIN SENSOR NOISE UPPER DRIFT",
+            "47": "BILL MOVE TO PRESENTER FAIL",
+            "48": "PURGEBIN LID CONFIG MIS MATCH",
+            "49": "RETRACT CLR BEFORE PRESENT BLK",
+            "50": "TOTAL NOTE COUNT OUTOF RANGE",
+            "51": "NOTE WIDTH OUTOF RANGE",
+            "52": "CART IN SBL APP",
+            "53": "CART COMM ERROR",
+            "54": "CASSETTE TYPE SENSOR FAILURE COMBINATION",
+            "55": "INTER CASSETTE MOVE ERROR",
+            "56": "CALIB CASSETTE TYPE MISMATCH",
+            "57": "CARTRIDGE FWF UPDATE SUCCESS",
+            "58": "CARTRIDGE DATA SENT FAIL",
+            "59": "CARTRIDGE DATA RECEV FAIL",
+            "60": "CARTRIDGE INVALID DATA RECEIVED",
+            "61": "CARTRIDGE DATA SENT SUCCESS",
+            "62": "CARTRIDGE CHECKSUM FAIL",
+            "63": "MAX PEEP PURGE LIMIT EXCEED",
+            "64": "PURGE BIN LID OPEN FAIL",
+            "65": "PURGE BIN LID CLOSE FAIL",
+            "66": "ACK RX FAIL FOR SHUTTER OPEN",
+            "67": "COMMAND VERSION MISMATCH",
+            "68": "CCM VER UNSUPPORT MISMATCH",
+            "69": "FID A CARD REMOVE TIMEOUT",
+            "70": "NOT IN SESSION",
+            "71": "PAIRING REQUEST EXHAUSTED",
+            "72": "SESSION DETAILS MISMATCH",
+            "73": "DOOR OPEN IDENTIFIED",
+            "74": "NO CASH ON TRAY - PRESENT BLOCK BEFORE CASH PRESENT",
+            "75": "NO CASH ON TRAY - RETRACT CLEAR BEFORE CASH PRESENT",
+            "76": "CAM FIND HOME TO",
+            "77": "CAM DISPENSE TO CLAMP TO",
+            "78": "CAM CLAMP TO PRESENT TO",
+            "79": "CAM PRESENT TO BP TO",
+            "80": "CAM DISPENSE TO PURGE TO",
+            "81": "CAM BP TO DISPENSE TO",
+            "82": "CART FIND HOME TO",
+            "83": "CART C2P TO (cassette to present)",
+            "84": "I2C COMM ERROR (DLDR)",
+            "85": "LED FAILURE (DLDR)",
+            "86": "CART P2BP TO (Present to Bulk purge)",
+            "97": "REQ NOT REACHED TO CDM",
+            "99": "UNKNOWN ERROR"
         };
 
-        const KEYWORDS = ["CASH JAM", "MOTOR TIMEOUT", "SENSOR FAILURE", "FAILURE", "SUSPECT", "E*2", "POWER CYCLE", "DRDY", "I/O"];
+        const KEYWORDS = ["CASH JAM", "MOTOR TIMEOUT", "SENSOR FAILURE", "FAILURE", "SUSPECT", "E*2", "POWER CYCLE", "DRDY", "I/O", "DISPENSED", "SUCCESS"];
 
         let aggregatedHits = [];
-        let dateCounts = {};
+        let keywordCounts = {};
+        let successCount = 0;
+        let failureCount = 0;
 
         async function handleFileSelection(input) {
             const files = input.files;
@@ -57,16 +143,15 @@
             document.getElementById('results').innerHTML = "";
             document.getElementById('summary').innerHTML = "";
             aggregatedHits = [];
-            dateCounts = {};
+            keywordCounts = {};
+            successCount = 0;
+            failureCount = 0;
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-
                 if (file.name.endsWith('.zip')) {
-                    // Extract and parse Zip content
                     await processZipFile(file);
                 } else {
-                    // Read standard log file
                     const text = await file.text();
                     parseLogContent(file.name, text);
                 }
@@ -80,10 +165,8 @@
             try {
                 const zip = new JSZip();
                 const unzipped = await zip.loadAsync(zipFile);
-
                 for (let filename in unzipped.files) {
                     const zipEntry = unzipped.files[filename];
-                    // Skip directory folders inside the zip
                     if (!zipEntry.dir && (filename.endsWith('.log') || filename.endsWith('.txt') || !filename.includes('.'))) {
                         const content = await zipEntry.async("string");
                         parseLogContent(zipEntry.name, content);
@@ -103,23 +186,39 @@
                 KEYWORDS.forEach(kw => {
                     const kwRegex = new RegExp(kw.replace('*', '.*'), 'i');
                     if (kwRegex.test(lineUpper)) {
-                        const dateMatch = line.match(/\b(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4}|\d{2}-\d{2}-\d{4})\b/);
-                        const date = dateMatch ? dateMatch[0] : "Unknown Date";
-
-                        // Update date metrics
-                        dateCounts[date] = (dateCounts[date] || 0) + 1;
-
-                        const codeMatch = line.match(/\b(\d{2})\b/);
-                        let action = "Inspect general hardware state";
-                        if (codeMatch && CODES[codeMatch[1]]) {
-                            action = `[Code ${codeMatch[1]}] ${CODES[codeMatch[1]]}`;
+                        
+                        // Extract date formatted as DD/MM/YY, YYYY-MM-DD, or DATE : MM/DD/YY
+                        let date = "Unknown Date";
+                        const dateMatch = line.match(/(\d{2}[\/\.-]\d{2}[\/\.-]\d{2,4})|(\d{4}[\/\.-]\d{2}[\/\.-]\d{2})/);
+                        if (dateMatch) {
+                            date = dateMatch[0];
                         }
+
+                        // Extract 4D Response Code (e.g. Failure (02:...) or E*2 code numbers)
+                        let codeDescription = "Inspect general hardware state";
+                        let matchedCode = null;
+
+                        const codeMatch = line.match(/\b(\d{1,2})\b/);
+                        if (codeMatch && CODES[codeMatch[1]]) {
+                            matchedCode = codeMatch[1];
+                            codeDescription = `Code ${matchedCode}: ${CODES[matchedCode]}`;
+                        }
+
+                        // Determine Success vs Failure metrics
+                        if (lineUpper.includes("SUCCESS") || matchedCode === "1" || matchedCode === "01" || matchedCode === "5" || matchedCode === "05" || matchedCode === "7" || matchedCode === "07") {
+                            successCount++;
+                        } else {
+                            failureCount++;
+                        }
+
+                        // Track keyword occurrences
+                        keywordCounts[kw] = (keywordCounts[kw] || 0) + 1;
 
                         aggregatedHits.push({
                             file: filename,
                             date: date,
                             keyword: kw,
-                            action: action,
+                            action: codeDescription,
                             raw: line.trim()
                         });
                     }
@@ -128,26 +227,36 @@
         }
 
         function renderResults() {
-            // Render Date Breakdown Summary
-            let summaryHtml = '<div class="summary-box"><b>Date-Wise Hit Breakdown:</b><br>';
-            if (Object.keys(dateCounts).length === 0) {
-                summaryHtml += '<span style="color:#aaa;">No keyword hits found in uploaded logs.</span>';
+            const totalHits = aggregatedHits.length;
+
+            // Render Dashboard Stats
+            let summaryHtml = `
+                <div class="summary-box">
+                    <div style="margin-bottom: 12px;">
+                        <span class="stat-badge total-bg">Total Events: ${totalHits}</span>
+                        <span class="stat-badge fail-bg">Failures: ${failureCount}</span>
+                        <span class="stat-badge success-bg">Successes: ${successCount}</span>
+                    </div>
+                    <b>Keyword Breakdown:</b><br>`;
+
+            if (Object.keys(keywordCounts).length === 0) {
+                summaryHtml += '<span style="color:#aaa;">No matches found in uploaded logs.</span>';
             } else {
-                for (let date in dateCounts) {
-                    summaryHtml += `• <b>${date}</b>: ${dateCounts[date]} total hits<br>`;
+                for (let kw in keywordCounts) {
+                    summaryHtml += `• <b>${kw}</b>: ${keywordCounts[kw]} occurrences<br>`;
                 }
             }
             summaryHtml += '</div>';
             document.getElementById('summary').innerHTML = summaryHtml;
 
-            // Render Hit Cards
+            // Render Detailed Cards
             let resultsHtml = '';
             aggregatedHits.forEach(hit => {
                 resultsHtml += `
                     <div class="card">
                         <div class="file-name">📄 Source: ${hit.file}</div>
-                        <div><b>${hit.date}</b> | Keyword: <span class="kw">${hit.keyword}</span></div>
-                        <div class="act">🔧 Action: ${hit.action}</div>
+                        <div><b>Date: ${hit.date}</b> | Keyword: <span class="kw">${hit.keyword}</span></div>
+                        <div class="act">🔧 Result / Action: ${hit.action}</div>
                         <div style="font-size:11px; color:#aaa; overflow-x:auto;">${hit.raw}</div>
                     </div>`;
             });
