@@ -3,22 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATM Log Analyzer</title>
+    <title>ATM Log & Zip Analyzer</title>
+    <!-- JSZip Library for Unzipping Files Offline -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #121212; color: #fff; padding: 15px; }
-        .card { background: #1e1e1e; padding: 12px; margin-bottom: 10px; border-radius: 6px; }
+        body { font-family: Arial, sans-serif; background: #121212; color: #fff; padding: 15px; margin: 0; }
+        .card { background: #1e1e1e; padding: 12px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid #007acc; }
         .kw { color: #ff4d4d; font-weight: bold; }
-        .act { color: #00e676; font-weight: bold; }
-        button { background: #007acc; color: white; border: none; padding: 12px; width: 100%; font-size: 16px; border-radius: 5px; }
+        .act { color: #00e676; font-weight: bold; margin: 4px 0; }
+        .file-name { color: #ffc107; font-size: 11px; }
+        button { background: #007acc; color: white; border: none; padding: 14px; width: 100%; font-size: 16px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        button:hover { background: #005999; }
         input[type="file"] { display: none; }
+        .summary-box { background: #252526; padding: 12px; border-radius: 6px; margin-top: 15px; border: 1px solid #ffc107; }
+        .status { margin-top: 10px; font-size: 14px; color: #aaa; text-align: center; }
     </style>
 </head>
 <body>
-    <h2>ATM Troubleshooting Utility</h2>
-    <button onclick="document.getElementById('fileInput').click()">📂 Select Log File</button>
-    <input type="file" id="fileInput" onchange="processLog(this)">
-    
-    <div id="summary" style="margin-top: 15px;"></div>
+
+    <h2>ATM Field Troubleshooting Utility</h2>
+    <p style="font-size: 12px; color: #aaa;">Upload multiple log files OR a single .ZIP folder containing logs.</p>
+
+    <!-- Multiple File & Zip Input -->
+    <button onclick="document.getElementById('fileInput').click()">📂 Select Logs or .ZIP File</button>
+    <input type="file" id="fileInput" multiple accept=".txt,.log,.zip" onchange="handleFileSelection(this)">
+
+    <div id="status" class="status"></div>
+    <div id="summary"></div>
     <div id="results" style="margin-top: 15px;"></div>
 
     <script>
@@ -27,54 +38,120 @@
             "02": "MOTOR TIMEOUT - Check drive belt & motor gear connection",
             "03": "SENSOR FAILURE - Clean optical sensor array",
             "11": "CASH JAM - Clear bill transport channel and check cassette 1/2",
+            "13": "SUSPECT CASH PICKEDUP - Inspect note quality and bill validation sensors",
             "15": "CASSETTE NOT ENABLED - Check DIP switch settings",
             "45": "CASSETTE INSERTION PROBLEM - Inspect physical guide rails",
             "84": "I2C COMM ERROR - Re-seat mainboard communication cable"
         };
+
         const KEYWORDS = ["CASH JAM", "MOTOR TIMEOUT", "SENSOR FAILURE", "FAILURE", "SUSPECT", "E*2", "POWER CYCLE", "DRDY", "I/O"];
 
-        function processLog(input) {
-            const file = input.files[0];
-            if (!file) return;
+        let aggregatedHits = [];
+        let dateCounts = {};
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const lines = e.target.result.split('\n');
-                let outputHtml = '';
-                let dateCounts = {};
+        async function handleFileSelection(input) {
+            const files = input.files;
+            if (!files.length) return;
 
-                lines.forEach(line => {
-                    const lineUpper = line.toUpperCase();
-                    KEYWORDS.forEach(kw => {
-                        if (lineUpper.includes(kw)) {
-                            const dateMatch = line.match(/\b(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})\b/);
-                            const date = dateMatch ? dateMatch[0] : "Unknown Date";
-                            dateCounts[date] = (dateCounts[date] || 0) + 1;
+            document.getElementById('status').innerText = "Processing files...";
+            document.getElementById('results').innerHTML = "";
+            document.getElementById('summary').innerHTML = "";
+            aggregatedHits = [];
+            dateCounts = {};
 
-                            const codeMatch = line.match(/\b(\d{2})\b/);
-                            let action = "Inspect hardware state";
-                            if (codeMatch && CODES[codeMatch[1]]) {
-                                action = `[Code ${codeMatch[1]}] ${CODES[codeMatch[1]]}`;
-                            }
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
 
-                            outputHtml += `<div class="card">
-                                <div><b>${date}</b> | Keyword: <span class="kw">${kw}</span></div>
-                                <div class="act">🔧 Action: ${action}</div>
-                                <div style="font-size:11px; color:#aaa;">${line.trim()}</div>
-                            </div>`;
-                        }
-                    });
-                });
-
-                let summaryHtml = '<b>Hits Breakdown By Date:</b><br>';
-                for (let d in dateCounts) {
-                    summaryHtml += `• ${d}: ${dateCounts[d]} hits<br>`;
+                if (file.name.endsWith('.zip')) {
+                    // Extract and parse Zip content
+                    await processZipFile(file);
+                } else {
+                    // Read standard log file
+                    const text = await file.text();
+                    parseLogContent(file.name, text);
                 }
+            }
 
-                document.getElementById('summary').innerHTML = `<div class="card" style="border: 1px solid #ffc107">${summaryHtml}</div>`;
-                document.getElementById('results').innerHTML = outputHtml;
-            };
-            reader.readAsText(file);
+            renderResults();
+            document.getElementById('status').innerText = `Completed analyzing ${files.length} item(s).`;
+        }
+
+        async function processZipFile(zipFile) {
+            try {
+                const zip = new JSZip();
+                const unzipped = await zip.loadAsync(zipFile);
+
+                for (let filename in unzipped.files) {
+                    const zipEntry = unzipped.files[filename];
+                    // Skip directory folders inside the zip
+                    if (!zipEntry.dir && (filename.endsWith('.log') || filename.endsWith('.txt') || !filename.includes('.'))) {
+                        const content = await zipEntry.async("string");
+                        parseLogContent(zipEntry.name, content);
+                    }
+                }
+            } catch (err) {
+                alert("Error unzipping file: " + err.message);
+            }
+        }
+
+        function parseLogContent(filename, text) {
+            const lines = text.split('\n');
+
+            lines.forEach(line => {
+                const lineUpper = line.toUpperCase();
+
+                KEYWORDS.forEach(kw => {
+                    const kwRegex = new RegExp(kw.replace('*', '.*'), 'i');
+                    if (kwRegex.test(lineUpper)) {
+                        const dateMatch = line.match(/\b(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4}|\d{2}-\d{2}-\d{4})\b/);
+                        const date = dateMatch ? dateMatch[0] : "Unknown Date";
+
+                        // Update date metrics
+                        dateCounts[date] = (dateCounts[date] || 0) + 1;
+
+                        const codeMatch = line.match(/\b(\d{2})\b/);
+                        let action = "Inspect general hardware state";
+                        if (codeMatch && CODES[codeMatch[1]]) {
+                            action = `[Code ${codeMatch[1]}] ${CODES[codeMatch[1]]}`;
+                        }
+
+                        aggregatedHits.push({
+                            file: filename,
+                            date: date,
+                            keyword: kw,
+                            action: action,
+                            raw: line.trim()
+                        });
+                    }
+                });
+            });
+        }
+
+        function renderResults() {
+            // Render Date Breakdown Summary
+            let summaryHtml = '<div class="summary-box"><b>Date-Wise Hit Breakdown:</b><br>';
+            if (Object.keys(dateCounts).length === 0) {
+                summaryHtml += '<span style="color:#aaa;">No keyword hits found in uploaded logs.</span>';
+            } else {
+                for (let date in dateCounts) {
+                    summaryHtml += `• <b>${date}</b>: ${dateCounts[date]} total hits<br>`;
+                }
+            }
+            summaryHtml += '</div>';
+            document.getElementById('summary').innerHTML = summaryHtml;
+
+            // Render Hit Cards
+            let resultsHtml = '';
+            aggregatedHits.forEach(hit => {
+                resultsHtml += `
+                    <div class="card">
+                        <div class="file-name">📄 Source: ${hit.file}</div>
+                        <div><b>${hit.date}</b> | Keyword: <span class="kw">${hit.keyword}</span></div>
+                        <div class="act">🔧 Action: ${hit.action}</div>
+                        <div style="font-size:11px; color:#aaa; overflow-x:auto;">${hit.raw}</div>
+                    </div>`;
+            });
+            document.getElementById('results').innerHTML = resultsHtml;
         }
     </script>
 </body>
