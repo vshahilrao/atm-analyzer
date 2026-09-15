@@ -4,41 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATM Log Field Dashboard & Exporter</title>
-    <!-- JSZip for Offline Extraction -->
+    <!-- Libraries for Unzipping and Professional Excel Generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --accent-blue: #007acc;
-            --accent-green: #28a745;
-            --accent-red: #ff4d4d;
-            --accent-yellow: #ffc107;
-            --text-color: #ffffff;
-            --subtext-color: #aaaaaa;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-blue: #38bdf8;
+            --accent-green: #22c55e;
+            --accent-red: #f87171;
+            --accent-yellow: #facc15;
+            --text-color: #f8fafc;
+            --subtext-color: #94a3b8;
+            --border-color: #334155;
         }
 
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg-color); color: var(--text-color); padding: 15px; margin: 0; }
         h2 { margin-top: 0; font-size: 20px; text-align: center; color: var(--accent-blue); }
         
-        .btn-group { display: flex; gap: 10px; margin-bottom: 10px; }
-        button { flex: 1; background: var(--accent-blue); color: white; border: none; padding: 14px; font-size: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        button.excel-btn { background: var(--accent-green); }
+        .btn-group { display: flex; gap: 10px; margin-bottom: 12px; }
+        button { flex: 1; background: var(--accent-blue); color: #0f172a; border: none; padding: 14px; font-size: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        button.excel-btn { background: var(--accent-green); color: #ffffff; }
         button:disabled { opacity: 0.4; cursor: not-allowed; }
         input[type="file"] { display: none; }
         .status { margin-top: 5px; font-size: 13px; color: var(--accent-yellow); text-align: center; }
 
-        .table-container { overflow-x: auto; margin-top: 15px; background: var(--card-bg); border-radius: 6px; padding: 10px; border: 1px solid #333; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
-        th, td { padding: 8px; border: 1px solid #333; }
-        th { background: #252526; color: var(--accent-yellow); }
-        .total-row { font-weight: bold; background: #2a2a2a; color: #00e676; }
+        /* KPI Dashboard */
+        .kpi-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .kpi-card { background: var(--card-bg); padding: 12px; border-radius: 6px; text-align: center; border: 1px solid var(--border-color); }
+        .kpi-num { font-size: 22px; font-weight: bold; color: var(--accent-green); }
+        .kpi-lbl { font-size: 11px; color: var(--subtext-color); margin-top: 4px; }
 
-        .search-box { width: 100%; padding: 10px; margin-top: 15px; box-sizing: border-box; background: var(--card-bg); border: 1px solid #333; border-radius: 6px; color: white; }
-        .card { background: var(--card-bg); padding: 12px; margin-top: 10px; border-radius: 6px; border-left: 4px solid var(--accent-blue); }
+        /* Clean Dashboard Matrix Table */
+        .table-container { overflow-x: auto; margin-top: 15px; background: var(--card-bg); border-radius: 6px; padding: 12px; border: 1px solid var(--border-color); }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+        th, td { padding: 10px; border: 1px solid var(--border-color); }
+        th { background: #0f172a; color: var(--accent-yellow); font-weight: 600; }
+        .total-row { font-weight: bold; background: #0f172a; color: var(--accent-green); }
+
+        .search-box { width: 100%; padding: 12px; margin-top: 15px; box-sizing: border-box; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; color: white; }
+        .card { background: var(--card-bg); padding: 12px; margin-top: 10px; border-radius: 6px; border-left: 4px solid var(--accent-blue); border: 1px solid var(--border-color); }
         .kw { color: var(--accent-red); font-weight: bold; }
-        .act { color: #00e676; font-weight: bold; margin: 4px 0; font-size: 13px; }
-        .raw-line { font-size: 11px; color: var(--subtext-color); font-family: monospace; background: #141414; padding: 6px; border-radius: 4px; }
+        .act { color: var(--accent-green); font-weight: bold; margin: 4px 0; font-size: 13px; }
+        .raw-line { font-size: 11px; color: var(--subtext-color); font-family: monospace; background: #0f172a; padding: 6px; border-radius: 4px; margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -47,18 +56,35 @@
 
     <div class="btn-group">
         <button onclick="document.getElementById('fileInput').click()">📂 Upload Logs / ZIP</button>
-        <button id="downloadBtn" class="excel-btn" onclick="exportReport()" disabled>📊 Export Excel (CSV)</button>
+        <button id="downloadBtn" class="excel-btn" onclick="exportToExcel()" disabled>📊 Download Excel Report</button>
     </div>
     <input type="file" id="fileInput" multiple accept=".txt,.log,.zip" onchange="handleFileSelection(this)">
 
     <div id="status" class="status"></div>
 
+    <!-- KPI Summary Section -->
+    <div id="kpiSection" class="kpi-container" style="display:none;">
+        <div class="kpi-card">
+            <div id="kpiFiles" class="kpi-num">0</div>
+            <div class="kpi-lbl">Files Processed</div>
+        </div>
+        <div class="kpi-card">
+            <div id="kpiHits" class="kpi-num">0</div>
+            <div class="kpi-lbl">Total Issue Hits</div>
+        </div>
+        <div class="kpi-card">
+            <div id="kpiDates" class="kpi-num">0</div>
+            <div class="kpi-lbl">Affected Days</div>
+        </div>
+    </div>
+
+    <!-- Clean Day-by-Day Dashboard Table -->
     <div id="dashboardSection" class="table-container" style="display:none;">
-        <h3 style="font-size:14px; margin: 0 0 10px 0; color: var(--accent-yellow);">Date-Wise Code & Keyword Matrix</h3>
+        <h3 style="font-size:14px; margin: 0 0 10px 0; color: var(--accent-yellow);">Day-by-Day Error & Issue Breakdown</h3>
         <div id="tableWrapper"></div>
     </div>
 
-    <input type="text" id="searchFilter" class="search-box" placeholder="🔍 Search keyword, date, or log details..." onkeyup="filterHits()" style="display:none;">
+    <input type="text" id="searchFilter" class="search-box" placeholder="🔍 Search by code, date, or log content..." onkeyup="filterHits()" style="display:none;">
 
     <div id="results"></div>
 
@@ -67,23 +93,47 @@
             "01": "DISPENSED SUCCESSFULLY",
             "02": "MOTOR TIMEOUT",
             "03": "SENSOR FAILURE",
+            "04": "MAX TWIN LIMIT EXCEEDED",
+            "05": "PRESENTED SUCCESSFULLY",
+            "06": "PRESENTATION TRAY NOTHOMED",
+            "07": "BULKPURGE SUCCESSFULL",
+            "08": "MOTOR TIMEOUT NOTHOMED",
+            "09": "DISPENSER INITIALIZED",
+            "10": "DISPENSER NOT INITIALIZED",
             "11": "CASH JAM",
+            "12": "NO CASH ON TRAY",
             "13": "SUSPECT CASH PICKEDUP",
+            "14": "CASH JAM NOTHOMED",
             "15": "CASSETTE NOT ENABLED",
+            "16": "NO NOTE LIMIT EXCEEDED",
+            "17": "NOTE THRESHOLD NOT SET",
+            "18": "DRIFT ERROR",
+            "20": "CALIBRATION NOT DONE",
+            "24": "CASSETTE TYPE SENSOR FAILURE",
+            "25": "FLASH ERROR",
+            "40": "SAFE SHUTTER OPEN FAILS",
+            "41": "SAFE SHUTTER CLOSE FAILS",
+            "42": "CARTRIDGE POSITION ERROR",
+            "43": "CAM POSITION ERROR",
+            "44": "PURGE BIN NOT INSERTED",
             "45": "CASSETTE INSERTION PROBLEM",
-            "84": "I2C COMM ERROR"
+            "53": "CART COMM ERROR",
+            "73": "DOOR OPEN IDENTIFIED",
+            "84": "I2C COMM ERROR",
+            "85": "LED FAILURE",
+            "99": "UNKNOWN ERROR"
         };
 
-        const KEYWORDS = ["CASH JAM", "MOTOR TIMEOUT", "SENSOR FAILURE", "FAILURE", "SUSPECT", "E*2", "POWER CYCLE", "ERROR"];
+        const KEYWORDS = ["CASH JAM", "MOTOR TIMEOUT", "DISPENSER NOT INITIALIZED", "SENSOR FAILURE", "PURGE BIN NOT INSERTED", "ERROR", "FAIL", "REJECT", "FAILURE", "SUSPECT", "E*2", "POWER CYCLE", "DRDY", "I/O", "CRITICAL", "TIMEOUT"];
 
         let aggregatedHits = [];
-        let matrixData = {};
+        let matrixData = {}; // Format: { date: { code_label: count } }
 
         async function handleFileSelection(input) {
             const files = input.files;
             if (!files.length) return;
 
-            document.getElementById('status').innerText = "Analyzing files...";
+            document.getElementById('status').innerText = "Analyzing log files...";
             document.getElementById('results').innerHTML = "";
             aggregatedHits = [];
             matrixData = {};
@@ -101,10 +151,9 @@
                 }
             }
 
-            renderDashboard();
-            document.getElementById('status').innerText = `Processed ${totalFiles} file(s). Found ${aggregatedHits.length} total hits.`;
+            renderDashboard(totalFiles);
+            document.getElementById('status').innerText = `Completed processing ${totalFiles} file(s). Found ${aggregatedHits.length} total hits.`;
             
-            // Enable download button if hits exist
             const downloadBtn = document.getElementById('downloadBtn');
             if (aggregatedHits.length > 0) {
                 downloadBtn.removeAttribute('disabled');
@@ -136,6 +185,7 @@
             const lines = text.split('\n');
             let currentDate = "Unknown Date";
 
+            // Extract filename date fallback
             const filenameDateMatch = filename.match(/\b(\d{4}[_\-]\d{2}[_\-]\d{2}|\d{2}[_\-]\d{2}[_\-]\d{4})\b/);
             if (filenameDateMatch) {
                 currentDate = filenameDateMatch[0].replace(/_/g, '-');
@@ -144,6 +194,7 @@
             lines.forEach(line => {
                 const lineUpper = line.toUpperCase();
 
+                // Extract line timestamp
                 const inlineDateMatch = line.match(/(?:DATE\s*:\s*|DATE\s+)(\d{2}[\/\.-]\d{2}[\/\.-]\d{2,4})|\b(\d{4}[\/\.-]\d{2}[\/\.-]\d{2}|\d{2}[\/\.-]\d{2}[\/\.-]\d{4})\b/i);
                 if (inlineDateMatch) {
                     currentDate = inlineDateMatch[1] || inlineDateMatch[2];
@@ -153,22 +204,24 @@
                     const kwRegex = new RegExp(kw.replace('*', '.*'), 'i');
                     if (kwRegex.test(lineUpper)) {
                         
+                        // Extract error code
                         const codeMatch = line.match(/\b(\d{2})\b/);
                         let action = "Inspect general hardware state";
-                        let keyLabel = kw;
+                        let unifiedLabel = kw;
 
+                        // Consolidate duplicate codes (e.g., Code 02) into a single code metric
                         if (codeMatch && CODES[codeMatch[1]]) {
                             action = `[Code ${codeMatch[1]}] ${CODES[codeMatch[1]]}`;
-                            keyLabel = `Code ${codeMatch[1]} (${kw})`;
+                            unifiedLabel = `Code ${codeMatch[1]} (${CODES[codeMatch[1]]})`;
                         }
 
                         if (!matrixData[currentDate]) matrixData[currentDate] = {};
-                        matrixData[currentDate][keyLabel] = (matrixData[currentDate][keyLabel] || 0) + 1;
+                        matrixData[currentDate][unifiedLabel] = (matrixData[currentDate][unifiedLabel] || 0) + 1;
 
                         aggregatedHits.push({
                             file: filename,
                             date: currentDate,
-                            keyword: keyLabel,
+                            keyword: unifiedLabel,
                             action: action,
                             raw: line.trim()
                         });
@@ -177,7 +230,13 @@
             });
         }
 
-        function renderDashboard() {
+        function renderDashboard(fileCount) {
+            // Update KPIs
+            document.getElementById('kpiFiles').innerText = fileCount;
+            document.getElementById('kpiHits').innerText = aggregatedHits.length;
+            document.getElementById('kpiDates').innerText = Object.keys(matrixData).length;
+
+            document.getElementById('kpiSection').style.display = 'grid';
             document.getElementById('dashboardSection').style.display = 'block';
             document.getElementById('searchFilter').style.display = 'block';
 
@@ -189,7 +248,7 @@
 
             let tableHtml = '<table><thead><tr><th>Date</th>';
             keyArray.forEach(k => tableHtml += `<th>${k}</th>`);
-            tableHtml += '<th>Total Hits</th></tr></thead><tbody>';
+            tableHtml += '<th>Daily Total</th></tr></thead><tbody>';
 
             let colTotals = {};
             keyArray.forEach(k => colTotals[k] = 0);
@@ -207,10 +266,10 @@
                 });
 
                 grandTotal += rowTotal;
-                tableHtml += `<td style="color:#00e676; font-weight:bold;">${rowTotal}</td></tr>`;
+                tableHtml += `<td style="color:var(--accent-green); font-weight:bold;">${rowTotal}</td></tr>`;
             }
 
-            tableHtml += '<tr class="total-row"><td>TOTAL</td>';
+            tableHtml += '<tr class="total-row"><td>TOTAL HITS</td>';
             keyArray.forEach(k => tableHtml += `<td>${colTotals[k]}</td>`);
             tableHtml += `<td>${grandTotal}</td></tr></tbody></table>`;
 
@@ -243,30 +302,49 @@
             renderHits(filtered);
         }
 
-        // Native Browser File Exporter (Direct CSV Download compatible with Microsoft Excel)
-        function exportReport() {
-            if (!aggregatedHits.length) return;
+        function exportToExcel() {
+            if (typeof XLSX === 'undefined') {
+                alert("Excel library is loading. Please try again in a moment.");
+                return;
+            }
 
-            let csvContent = "data:text/csv;charset=utf-8,";
-            
-            // Header
-            csvContent += "Source File,Date,Issue Code / Keyword,Recommended Action,Raw Log Line\n";
+            const wb = XLSX.utils.book_new();
 
-            // Rows
-            aggregatedHits.forEach(h => {
-                let cleanRaw = `"${h.raw.replace(/"/g, '""')}"`;
-                let cleanAction = `"${h.action.replace(/"/g, '""')}"`;
-                let cleanFile = `"${h.file.replace(/"/g, '""')}"`;
-                csvContent += `${cleanFile},${h.date},"${h.keyword}",${cleanAction},${cleanRaw}\n`;
-            });
+            // Sheet 1: Day-by-Day Dashboard Matrix
+            let matrixRows = [];
+            let activeKeys = new Set();
+            for (let d in matrixData) {
+                for (let k in matrixData[d]) activeKeys.add(k);
+            }
+            let keyArray = Array.from(activeKeys);
 
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "ATM_Troubleshooting_Report.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            for (let date in matrixData) {
+                let rowObj = { "Date": date };
+                let dailyTotal = 0;
+                keyArray.forEach(k => {
+                    let count = matrixData[date][k] || 0;
+                    rowObj[k] = count;
+                    dailyTotal += count;
+                });
+                rowObj["Daily Total"] = dailyTotal;
+                matrixRows.push(rowObj);
+            }
+
+            const wsDashboard = XLSX.utils.json_to_sheet(matrixRows);
+            XLSX.utils.book_append_sheet(wb, wsDashboard, "Dashboard Sheet");
+
+            // Sheet 2: Itemized Log Data
+            const wsDetails = XLSX.utils.json_to_sheet(aggregatedHits.map(h => ({
+                "Source File": h.file,
+                "Date": h.date,
+                "Error Code / Issue": h.keyword,
+                "Action Point": h.action,
+                "Raw Log String": h.raw
+            })));
+            XLSX.utils.book_append_sheet(wb, wsDetails, "Data Sheet");
+
+            // Save .xlsx file directly
+            XLSX.writeFile(wb, "ATM_Troubleshooting_Dashboard_Report.xlsx");
         }
     </script>
 </body>
