@@ -3,137 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATM Log & Syslog Field Dashboard</title>
-    <!-- JSZip Library for Unzipping Files Offline -->
+    <title>ATM Log Field Dashboard & Excel Exporter</title>
+    <!-- Libraries for Unzipping and Excel Generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg-color: #121212;
             --card-bg: #1e1e1e;
             --accent-blue: #007acc;
-            --accent-green: #00e676;
+            --accent-green: #28a745;
             --accent-red: #ff4d4d;
             --accent-yellow: #ffc107;
             --text-color: #ffffff;
             --subtext-color: #aaaaaa;
         }
 
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg-color); color: var(--text-color); padding: 15px; margin: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg-color); color: var(--text-color); padding: 15px; margin: 0; }
         h2 { margin-top: 0; font-size: 20px; text-align: center; color: var(--accent-blue); }
-        p.subtitle { font-size: 12px; color: var(--subtext-color); text-align: center; margin-bottom: 15px; }
-
-        /* Action Controls */
-        button { background: var(--accent-blue); color: white; border: none; padding: 14px; width: 100%; font-size: 16px; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        button:active { transform: scale(0.98); }
+        
+        .btn-group { display: flex; gap: 10px; margin-bottom: 10px; }
+        button { flex: 1; background: var(--accent-blue); color: white; border: none; padding: 14px; font-size: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        button.excel-btn { background: var(--accent-green); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
         input[type="file"] { display: none; }
-        .status { margin-top: 10px; font-size: 13px; color: var(--accent-yellow); text-align: center; }
-
-        /* Dashboard KPI Cards */
-        .kpi-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 15px; }
-        .kpi-card { background: var(--card-bg); padding: 10px; border-radius: 6px; text-align: center; border: 1px solid #2a2a2a; }
-        .kpi-number { font-size: 18px; font-weight: bold; color: var(--accent-green); }
-        .kpi-label { font-size: 10px; color: var(--subtext-color); margin-top: 4px; }
+        .status { margin-top: 5px; font-size: 13px; color: var(--accent-yellow); text-align: center; }
 
         /* Dashboard Table */
-        .table-container { overflow-x: auto; margin-top: 15px; background: var(--card-bg); border-radius: 6px; padding: 8px; border: 1px solid #2a2a2a; }
+        .table-container { overflow-x: auto; margin-top: 15px; background: var(--card-bg); border-radius: 6px; padding: 10px; border: 1px solid #333; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
-        th, td { padding: 8px; border-bottom: 1px solid #333; }
+        th, td { padding: 8px; border: 1px solid #333; }
         th { background: #252526; color: var(--accent-yellow); }
-        tr:last-child td { border-bottom: none; }
-        .total-row { font-weight: bold; background: #2a2a2a; color: var(--accent-green); }
+        .total-row { font-weight: bold; background: #2a2a2a; color: #00e676; }
 
-        /* Detail Cards */
-        .search-box { width: 100%; padding: 10px; margin-top: 15px; box-sizing: border-box; background: var(--card-bg); border: 1px solid #333; border-radius: 6px; color: white; font-size: 14px; }
+        .search-box { width: 100%; padding: 10px; margin-top: 15px; box-sizing: border-box; background: var(--card-bg); border: 1px solid #333; border-radius: 6px; color: white; }
         .card { background: var(--card-bg); padding: 12px; margin-top: 10px; border-radius: 6px; border-left: 4px solid var(--accent-blue); }
         .kw { color: var(--accent-red); font-weight: bold; }
-        .act { color: var(--accent-green); font-weight: bold; margin: 4px 0; font-size: 13px; }
-        .file-name { color: var(--accent-yellow); font-size: 11px; }
-        .raw-line { font-size: 11px; color: var(--subtext-color); white-space: pre-wrap; word-break: break-all; font-family: monospace; background: #141414; padding: 6px; border-radius: 4px; margin-top: 4px; }
+        .act { color: #00e676; font-weight: bold; margin: 4px 0; font-size: 13px; }
+        .raw-line { font-size: 11px; color: var(--subtext-color); font-family: monospace; background: #141414; padding: 6px; border-radius: 4px; }
     </style>
 </head>
 <body>
 
     <h2>ATM Troubleshooting Dashboard</h2>
-    <p class="subtitle">Upload multiple EJ/Syslog files or a compressed .ZIP archive</p>
 
-    <!-- Upload Button -->
-    <button onclick="document.getElementById('fileInput').click()">📂 Upload Logs or .ZIP Archive</button>
+    <div class="btn-group">
+        <button onclick="document.getElementById('fileInput').click()">📂 Upload Logs / ZIP</button>
+        <button id="downloadBtn" class="excel-btn" onclick="exportToExcel()" disabled>📊 Download Excel Report</button>
+    </div>
     <input type="file" id="fileInput" multiple accept=".txt,.log,.zip" onchange="handleFileSelection(this)">
 
     <div id="status" class="status"></div>
 
-    <!-- KPI Section -->
-    <div id="kpiSection" class="kpi-container" style="display:none;">
-        <div class="kpi-card">
-            <div id="kpiFiles" class="kpi-number">0</div>
-            <div class="kpi-label">Files Processed</div>
-        </div>
-        <div class="kpi-card">
-            <div id="kpiHits" class="kpi-number">0</div>
-            <div class="kpi-label">Total Hits</div>
-        </div>
-        <div class="kpi-card">
-            <div id="kpiDates" class="kpi-number">0</div>
-            <div class="kpi-label">Active Dates</div>
-        </div>
-    </div>
-
-    <!-- Date-by-Date Summary Table -->
+    <!-- Date-by-Date Matrix Table -->
     <div id="dashboardSection" class="table-container" style="display:none;">
-        <h3 style="font-size:14px; margin: 4px 0 8px 0; color: var(--accent-yellow);">Date-Wise Hit Matrix</h3>
+        <h3 style="font-size:14px; margin: 0 0 10px 0; color: var(--accent-yellow);">Date-Wise Code & Keyword Summary</h3>
         <div id="tableWrapper"></div>
     </div>
 
-    <!-- Live Filter Input -->
-    <input type="text" id="searchFilter" class="search-box" placeholder="🔍 Search keyword, action code, or line..." onkeyup="filterHits()" style="display:none;">
+    <!-- Live Search -->
+    <input type="text" id="searchFilter" class="search-box" placeholder="🔍 Search keyword, date, or log details..." onkeyup="filterHits()" style="display:none;">
 
-    <!-- Hit Detail Cards -->
+    <!-- Detail Cards -->
     <div id="results"></div>
 
     <script>
         const CODES = {
             "01": "DISPENSED SUCCESSFULLY",
-            "02": "MOTOR TIMEOUT - Check drive belt & motor gear connection",
-            "03": "SENSOR FAILURE - Clean optical sensor array",
-            "04": "MAX TWIN LIMIT EXCEEDED",
-            "05": "PRESENTED SUCCESSFULLY",
-            "06": "PRESENTATION TRAY NOTHOMED",
-            "07": "BULKPURGE SUCCESSFULL",
-            "08": "MOTOR TIMEOUT NOTHOMED",
-            "09": "DISPENSER INITIALIZED",
-            "10": "DISPENSER NOTINITIALIZED",
-            "11": "CASH JAM - Clear bill transport channel and check cassette 1/2",
-            "12": "NO CASH ON TRAY",
-            "13": "SUSPECT CASH PICKEDUP - Inspect note quality and bill validation sensors",
-            "14": "CASH JAM NOTHOMED",
-            "15": "CASSETTE NOT ENABLED - Check DIP switch settings",
-            "16": "NO NOTE LIMIT EXCEEDED",
-            "17": "NOTE THRESHOLD NOT SET",
-            "18": "DRIFT ERROR",
-            "20": "CALIBRATION NOT DONE",
-            "24": "CASSETTE TYPE SENSOR FAILURE PULLUP PULLDOWN",
-            "25": "FLASH ERROR",
-            "40": "SAFE SHUTTER OPEN FAILS",
-            "41": "SAFE SHUTTER CLOSE FAILS",
-            "42": "CARTRIDGE POSITION ERROR",
-            "43": "CAM POSITION ERROR",
-            "44": "PURGE BIN NOT INSERTED",
-            "45": "CASSETTE INSERTION PROBLEM - Inspect physical guide rails",
-            "53": "CART COMM ERROR",
-            "73": "DOOR OPEN IDENTIFIED",
-            "84": "I2C COMM ERROR - Re-seat mainboard communication cable",
-            "85": "LED FAILURE (DLDR)",
-            "99": "UNKNOWN ERROR"
+            "02": "MOTOR TIMEOUT",
+            "03": "SENSOR FAILURE",
+            "11": "CASH JAM",
+            "13": "SUSPECT CASH PICKEDUP",
+            "15": "CASSETTE NOT ENABLED",
+            "45": "CASSETTE INSERTION PROBLEM",
+            "84": "I2C COMM ERROR"
         };
 
-        const KEYWORDS = [
-            "CASH JAM", "MOTOR TIMEOUT", "DISPENSER NOT INITIALIZED", "SENSOR FAILURE",
-            "PURGE BIN NOT INSERTED", "ERROR", "FAIL", "REJECT", "FAILURE", "SUSPECT",
-            "E*2", "POWER CYCLE", "DRDY", "I/O", "CRITICAL", "TIMEOUT", "DISCONNECT"
-        ];
+        const KEYWORDS = ["CASH JAM", "MOTOR TIMEOUT", "SENSOR FAILURE", "FAILURE", "SUSPECT", "E*2", "POWER CYCLE", "ERROR"];
 
         let aggregatedHits = [];
-        let matrixData = {}; // Format: { date: { keyword: count } }
+        let matrixData = {}; // { date: { code_or_kw: count } }
 
         async function handleFileSelection(input) {
             const files = input.files;
@@ -144,23 +93,22 @@
             aggregatedHits = [];
             matrixData = {};
 
-            let totalFilesProcessed = 0;
+            let totalFiles = 0;
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-
                 if (file.name.endsWith('.zip')) {
-                    const zipCount = await processZipFile(file);
-                    totalFilesProcessed += zipCount;
+                    totalFiles += await processZipFile(file);
                 } else {
                     const text = await file.text();
                     parseLogContent(file.name, text);
-                    totalFilesProcessed += 1;
+                    totalFiles += 1;
                 }
             }
 
-            renderDashboard(totalFilesProcessed);
-            document.getElementById('status').innerText = `Analysis complete across ${totalFilesProcessed} log file(s).`;
+            renderDashboard();
+            document.getElementById('status').innerText = `Processed ${totalFiles} log file(s). Found ${aggregatedHits.length} hits.`;
+            document.getElementById('downloadBtn').disabled = aggregatedHits.length === 0;
         }
 
         async function processZipFile(zipFile) {
@@ -168,7 +116,6 @@
             try {
                 const zip = new JSZip();
                 const unzipped = await zip.loadAsync(zipFile);
-
                 for (let filename in unzipped.files) {
                     const zipEntry = unzipped.files[filename];
                     if (!zipEntry.dir && (filename.endsWith('.log') || filename.endsWith('.txt') || !filename.includes('.'))) {
@@ -178,38 +125,51 @@
                     }
                 }
             } catch (err) {
-                alert("Error expanding ZIP file: " + err.message);
+                alert("Error unzipping file: " + err.message);
             }
             return processed;
         }
 
         function parseLogContent(filename, text) {
             const lines = text.split('\n');
+            let currentDate = "Unknown Date";
+
+            // Extract file date from name if present (e.g., EJ_2026_09_10.log)
+            const filenameDateMatch = filename.match(/\b(\d{4}[_\-]\d{2}[_\-]\d{2}|\d{2}[_\-]\d{2}[_\-]\d{4})\b/);
+            if (filenameDateMatch) {
+                currentDate = filenameDateMatch[0].replace(/_/g, '-');
+            }
 
             lines.forEach(line => {
                 const lineUpper = line.toUpperCase();
 
+                // Advanced Date Detection (Handles "DATE : 10/09/26", "2026-09-10", etc.)
+                const inlineDateMatch = line.match(/(?:DATE\s*:\s*|DATE\s+)(\d{2}[\/\.-]\d{2}[\/\.-]\d{2,4})|\b(\d{4}[\/\.-]\d{2}[\/\.-]\d{2}|\d{2}[\/\.-]\d{2}[\/\.-]\d{4})\b/i);
+                if (inlineDateMatch) {
+                    currentDate = inlineDateMatch[1] || inlineDateMatch[2];
+                }
+
                 KEYWORDS.forEach(kw => {
                     const kwRegex = new RegExp(kw.replace('*', '.*'), 'i');
                     if (kwRegex.test(lineUpper)) {
-                        const dateMatch = line.match(/\b(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4}|\d{2}-\d{2}-\d{4})\b/);
-                        const date = dateMatch ? dateMatch[0] : "Unknown Date";
-
-                        // Update matrix counts
-                        if (!matrixData[date]) matrixData[date] = {};
-                        matrixData[date][kw] = (matrixData[date][kw] || 0) + 1;
-
-                        // Match 2-digit error code
+                        
                         const codeMatch = line.match(/\b(\d{2})\b/);
                         let action = "Inspect general hardware state";
+                        let keyLabel = kw;
+
                         if (codeMatch && CODES[codeMatch[1]]) {
                             action = `[Code ${codeMatch[1]}] ${CODES[codeMatch[1]]}`;
+                            keyLabel = `Code ${codeMatch[1]} (${kw})`;
                         }
+
+                        // Matrix count update
+                        if (!matrixData[currentDate]) matrixData[currentDate] = {};
+                        matrixData[currentDate][keyLabel] = (matrixData[currentDate][keyLabel] || 0) + 1;
 
                         aggregatedHits.push({
                             file: filename,
-                            date: date,
-                            keyword: kw,
+                            date: currentDate,
+                            keyword: keyLabel,
                             action: action,
                             raw: line.trim()
                         });
@@ -218,58 +178,44 @@
             });
         }
 
-        function renderDashboard(fileCount) {
-            // Update KPIs
-            document.getElementById('kpiFiles').innerText = fileCount;
-            document.getElementById('kpiHits').innerText = aggregatedHits.length;
-            document.getElementById('kpiDates').innerText = Object.keys(matrixData).length;
-
-            document.getElementById('kpiSection').style.display = 'grid';
+        function renderDashboard() {
             document.getElementById('dashboardSection').style.display = 'block';
             document.getElementById('searchFilter').style.display = 'block';
 
-            // Build Date-by-Date Table
-            let tableHtml = '<table><thead><tr><th>Date</th>';
-            
-            // Get active keywords present in hits
-            let activeKeywords = new Set();
-            for (let date in matrixData) {
-                for (let kw in matrixData[date]) activeKeywords.add(kw);
+            let activeKeys = new Set();
+            for (let d in matrixData) {
+                for (let k in matrixData[d]) activeKeys.add(k);
             }
-            let kwArray = Array.from(activeKeywords);
+            let keyArray = Array.from(activeKeys);
 
-            kwArray.forEach(kw => { tableHtml += `<th>${kw}</th>`; });
-            tableHtml += '<th>Total</th></tr></thead><tbody>';
+            let tableHtml = '<table><thead><tr><th>Date</th>';
+            keyArray.forEach(k => tableHtml += `<th>${k}</th>`);
+            tableHtml += '<th>Total Hits</th></tr></thead><tbody>';
 
             let colTotals = {};
-            kwArray.forEach(kw => colTotals[kw] = 0);
+            keyArray.forEach(k => colTotals[k] = 0);
             let grandTotal = 0;
 
             for (let date in matrixData) {
                 tableHtml += `<tr><td><b>${date}</b></td>`;
                 let rowTotal = 0;
 
-                kwArray.forEach(kw => {
-                    let count = matrixData[date][kw] || 0;
+                keyArray.forEach(k => {
+                    let count = matrixData[date][k] || 0;
                     tableHtml += `<td>${count > 0 ? count : '-'}</td>`;
                     rowTotal += count;
-                    colTotals[kw] += count;
+                    colTotals[k] += count;
                 });
 
                 grandTotal += rowTotal;
-                tableHtml += `<td style="color:var(--accent-green); font-weight:bold;">${rowTotal}</td></tr>`;
+                tableHtml += `<td style="color:#00e676; font-weight:bold;">${rowTotal}</td></tr>`;
             }
 
-            // Total Row
             tableHtml += '<tr class="total-row"><td>TOTAL</td>';
-            kwArray.forEach(kw => {
-                tableHtml += `<td>${colTotals[kw]}</td>`;
-            });
+            keyArray.forEach(k => tableHtml += `<td>${colTotals[k]}</td>`);
             tableHtml += `<td>${grandTotal}</td></tr></tbody></table>`;
 
             document.getElementById('tableWrapper').innerHTML = tableHtml;
-
-            // Render Hit Cards
             renderHits(aggregatedHits);
         }
 
@@ -278,9 +224,9 @@
             hits.forEach(hit => {
                 resultsHtml += `
                     <div class="card">
-                        <div class="file-name">📄 ${hit.file}</div>
-                        <div><b>${hit.date}</b> | Keyword: <span class="kw">${hit.keyword}</span></div>
-                        <div class="act">🔧 Action: ${hit.action}</div>
+                        <div style="color:var(--accent-yellow); font-size:11px;">📄 ${hit.file}</div>
+                        <div><b>Date: ${hit.date}</b> | Issue: <span class="kw">${hit.keyword}</span></div>
+                        <div class="act">🔧 ${hit.action}</div>
                         <div class="raw-line">${hit.raw}</div>
                     </div>`;
             });
@@ -293,10 +239,49 @@
                 h.file.toLowerCase().includes(query) ||
                 h.date.toLowerCase().includes(query) ||
                 h.keyword.toLowerCase().includes(query) ||
-                h.action.toLowerCase().includes(query) ||
                 h.raw.toLowerCase().includes(query)
             );
             renderHits(filtered);
+        }
+
+        function exportToExcel() {
+            const wb = XLSX.utils.book_new();
+
+            // Sheet 1: Dashboard Matrix
+            let matrixRows = [];
+            let activeKeys = new Set();
+            for (let d in matrixData) {
+                for (let k in matrixData[d]) activeKeys.add(k);
+            }
+            let keyArray = Array.from(activeKeys);
+
+            for (let date in matrixData) {
+                let rowObj = { "Date": date };
+                let total = 0;
+                keyArray.forEach(k => {
+                    let count = matrixData[date][k] || 0;
+                    rowObj[k] = count;
+                    total += count;
+                });
+                rowObj["Total Hits"] = total;
+                matrixRows.push(rowObj);
+            }
+
+            const wsDashboard = XLSX.utils.json_to_sheet(matrixRows);
+            XLSX.utils.book_append_sheet(wb, wsDashboard, "Dashboard Summary");
+
+            // Sheet 2: Raw Log Details
+            const wsDetails = XLSX.utils.json_to_sheet(aggregatedHits.map(h => ({
+                "Source File": h.file,
+                "Date": h.date,
+                "Keyword / Code": h.keyword,
+                "Action Point": h.action,
+                "Raw Log Line": h.raw
+            })));
+            XLSX.utils.book_append_sheet(wb, wsDetails, "Detailed Hits");
+
+            // Download File
+            XLSX.writeFile(wb, "ATM_Troubleshooting_Report.xlsx");
         }
     </script>
 </body>
