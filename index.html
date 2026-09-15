@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATM Log Analyzer</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: #fff; padding: 15px; }
+        .card { background: #1e1e1e; padding: 12px; margin-bottom: 10px; border-radius: 6px; }
+        .kw { color: #ff4d4d; font-weight: bold; }
+        .act { color: #00e676; font-weight: bold; }
+        button { background: #007acc; color: white; border: none; padding: 12px; width: 100%; font-size: 16px; border-radius: 5px; }
+        input[type="file"] { display: none; }
+    </style>
+</head>
+<body>
+    <h2>ATM Troubleshooting Utility</h2>
+    <button onclick="document.getElementById('fileInput').click()">📂 Select Log File</button>
+    <input type="file" id="fileInput" onchange="processLog(this)">
+    
+    <div id="summary" style="margin-top: 15px;"></div>
+    <div id="results" style="margin-top: 15px;"></div>
+
+    <script>
+        const CODES = {
+            "01": "DISPENSED SUCCESSFULLY",
+            "02": "MOTOR TIMEOUT - Check drive belt & motor gear connection",
+            "03": "SENSOR FAILURE - Clean optical sensor array",
+            "11": "CASH JAM - Clear bill transport channel and check cassette 1/2",
+            "15": "CASSETTE NOT ENABLED - Check DIP switch settings",
+            "45": "CASSETTE INSERTION PROBLEM - Inspect physical guide rails",
+            "84": "I2C COMM ERROR - Re-seat mainboard communication cable"
+        };
+        const KEYWORDS = ["CASH JAM", "MOTOR TIMEOUT", "SENSOR FAILURE", "FAILURE", "SUSPECT", "E*2", "POWER CYCLE", "DRDY", "I/O"];
+
+        function processLog(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const lines = e.target.result.split('\n');
+                let outputHtml = '';
+                let dateCounts = {};
+
+                lines.forEach(line => {
+                    const lineUpper = line.toUpperCase();
+                    KEYWORDS.forEach(kw => {
+                        if (lineUpper.includes(kw)) {
+                            const dateMatch = line.match(/\b(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})\b/);
+                            const date = dateMatch ? dateMatch[0] : "Unknown Date";
+                            dateCounts[date] = (dateCounts[date] || 0) + 1;
+
+                            const codeMatch = line.match(/\b(\d{2})\b/);
+                            let action = "Inspect hardware state";
+                            if (codeMatch && CODES[codeMatch[1]]) {
+                                action = `[Code ${codeMatch[1]}] ${CODES[codeMatch[1]]}`;
+                            }
+
+                            outputHtml += `<div class="card">
+                                <div><b>${date}</b> | Keyword: <span class="kw">${kw}</span></div>
+                                <div class="act">🔧 Action: ${action}</div>
+                                <div style="font-size:11px; color:#aaa;">${line.trim()}</div>
+                            </div>`;
+                        }
+                    });
+                });
+
+                let summaryHtml = '<b>Hits Breakdown By Date:</b><br>';
+                for (let d in dateCounts) {
+                    summaryHtml += `• ${d}: ${dateCounts[d]} hits<br>`;
+                }
+
+                document.getElementById('summary').innerHTML = `<div class="card" style="border: 1px solid #ffc107">${summaryHtml}</div>`;
+                document.getElementById('results').innerHTML = outputHtml;
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
