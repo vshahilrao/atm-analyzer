@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATM Log Field Dashboard & Excel Exporter</title>
-    <!-- Libraries for Unzipping and Excel Generation -->
+    <title>ATM Log Field Dashboard & Exporter</title>
+    <!-- JSZip for Offline Extraction -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg-color: #121212;
@@ -25,11 +24,10 @@
         .btn-group { display: flex; gap: 10px; margin-bottom: 10px; }
         button { flex: 1; background: var(--accent-blue); color: white; border: none; padding: 14px; font-size: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         button.excel-btn { background: var(--accent-green); }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
         input[type="file"] { display: none; }
         .status { margin-top: 5px; font-size: 13px; color: var(--accent-yellow); text-align: center; }
 
-        /* Dashboard Table */
         .table-container { overflow-x: auto; margin-top: 15px; background: var(--card-bg); border-radius: 6px; padding: 10px; border: 1px solid #333; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
         th, td { padding: 8px; border: 1px solid #333; }
@@ -49,22 +47,19 @@
 
     <div class="btn-group">
         <button onclick="document.getElementById('fileInput').click()">📂 Upload Logs / ZIP</button>
-        <button id="downloadBtn" class="excel-btn" onclick="exportToExcel()" disabled>📊 Download Excel Report</button>
+        <button id="downloadBtn" class="excel-btn" onclick="exportReport()" disabled>📊 Export Excel (CSV)</button>
     </div>
     <input type="file" id="fileInput" multiple accept=".txt,.log,.zip" onchange="handleFileSelection(this)">
 
     <div id="status" class="status"></div>
 
-    <!-- Date-by-Date Matrix Table -->
     <div id="dashboardSection" class="table-container" style="display:none;">
-        <h3 style="font-size:14px; margin: 0 0 10px 0; color: var(--accent-yellow);">Date-Wise Code & Keyword Summary</h3>
+        <h3 style="font-size:14px; margin: 0 0 10px 0; color: var(--accent-yellow);">Date-Wise Code & Keyword Matrix</h3>
         <div id="tableWrapper"></div>
     </div>
 
-    <!-- Live Search -->
     <input type="text" id="searchFilter" class="search-box" placeholder="🔍 Search keyword, date, or log details..." onkeyup="filterHits()" style="display:none;">
 
-    <!-- Detail Cards -->
     <div id="results"></div>
 
     <script>
@@ -82,7 +77,7 @@
         const KEYWORDS = ["CASH JAM", "MOTOR TIMEOUT", "SENSOR FAILURE", "FAILURE", "SUSPECT", "E*2", "POWER CYCLE", "ERROR"];
 
         let aggregatedHits = [];
-        let matrixData = {}; // { date: { code_or_kw: count } }
+        let matrixData = {};
 
         async function handleFileSelection(input) {
             const files = input.files;
@@ -107,8 +102,15 @@
             }
 
             renderDashboard();
-            document.getElementById('status').innerText = `Processed ${totalFiles} log file(s). Found ${aggregatedHits.length} hits.`;
-            document.getElementById('downloadBtn').disabled = aggregatedHits.length === 0;
+            document.getElementById('status').innerText = `Processed ${totalFiles} file(s). Found ${aggregatedHits.length} total hits.`;
+            
+            // Enable download button if hits exist
+            const downloadBtn = document.getElementById('downloadBtn');
+            if (aggregatedHits.length > 0) {
+                downloadBtn.removeAttribute('disabled');
+            } else {
+                downloadBtn.setAttribute('disabled', 'true');
+            }
         }
 
         async function processZipFile(zipFile) {
@@ -134,7 +136,6 @@
             const lines = text.split('\n');
             let currentDate = "Unknown Date";
 
-            // Extract file date from name if present (e.g., EJ_2026_09_10.log)
             const filenameDateMatch = filename.match(/\b(\d{4}[_\-]\d{2}[_\-]\d{2}|\d{2}[_\-]\d{2}[_\-]\d{4})\b/);
             if (filenameDateMatch) {
                 currentDate = filenameDateMatch[0].replace(/_/g, '-');
@@ -143,7 +144,6 @@
             lines.forEach(line => {
                 const lineUpper = line.toUpperCase();
 
-                // Advanced Date Detection (Handles "DATE : 10/09/26", "2026-09-10", etc.)
                 const inlineDateMatch = line.match(/(?:DATE\s*:\s*|DATE\s+)(\d{2}[\/\.-]\d{2}[\/\.-]\d{2,4})|\b(\d{4}[\/\.-]\d{2}[\/\.-]\d{2}|\d{2}[\/\.-]\d{2}[\/\.-]\d{4})\b/i);
                 if (inlineDateMatch) {
                     currentDate = inlineDateMatch[1] || inlineDateMatch[2];
@@ -162,7 +162,6 @@
                             keyLabel = `Code ${codeMatch[1]} (${kw})`;
                         }
 
-                        // Matrix count update
                         if (!matrixData[currentDate]) matrixData[currentDate] = {};
                         matrixData[currentDate][keyLabel] = (matrixData[currentDate][keyLabel] || 0) + 1;
 
@@ -244,44 +243,30 @@
             renderHits(filtered);
         }
 
-        function exportToExcel() {
-            const wb = XLSX.utils.book_new();
+        // Native Browser File Exporter (Direct CSV Download compatible with Microsoft Excel)
+        function exportReport() {
+            if (!aggregatedHits.length) return;
 
-            // Sheet 1: Dashboard Matrix
-            let matrixRows = [];
-            let activeKeys = new Set();
-            for (let d in matrixData) {
-                for (let k in matrixData[d]) activeKeys.add(k);
-            }
-            let keyArray = Array.from(activeKeys);
+            let csvContent = "data:text/csv;charset=utf-8,";
+            
+            // Header
+            csvContent += "Source File,Date,Issue Code / Keyword,Recommended Action,Raw Log Line\n";
 
-            for (let date in matrixData) {
-                let rowObj = { "Date": date };
-                let total = 0;
-                keyArray.forEach(k => {
-                    let count = matrixData[date][k] || 0;
-                    rowObj[k] = count;
-                    total += count;
-                });
-                rowObj["Total Hits"] = total;
-                matrixRows.push(rowObj);
-            }
+            // Rows
+            aggregatedHits.forEach(h => {
+                let cleanRaw = `"${h.raw.replace(/"/g, '""')}"`;
+                let cleanAction = `"${h.action.replace(/"/g, '""')}"`;
+                let cleanFile = `"${h.file.replace(/"/g, '""')}"`;
+                csvContent += `${cleanFile},${h.date},"${h.keyword}",${cleanAction},${cleanRaw}\n`;
+            });
 
-            const wsDashboard = XLSX.utils.json_to_sheet(matrixRows);
-            XLSX.utils.book_append_sheet(wb, wsDashboard, "Dashboard Summary");
-
-            // Sheet 2: Raw Log Details
-            const wsDetails = XLSX.utils.json_to_sheet(aggregatedHits.map(h => ({
-                "Source File": h.file,
-                "Date": h.date,
-                "Keyword / Code": h.keyword,
-                "Action Point": h.action,
-                "Raw Log Line": h.raw
-            })));
-            XLSX.utils.book_append_sheet(wb, wsDetails, "Detailed Hits");
-
-            // Download File
-            XLSX.writeFile(wb, "ATM_Troubleshooting_Report.xlsx");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "ATM_Troubleshooting_Report.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     </script>
 </body>
