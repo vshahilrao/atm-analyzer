@@ -139,16 +139,18 @@
             "99": "UNKNOWN ERROR"
         };
 
-        // NEW KEYWORDS REQUESTED
+        // TARGET KEYWORDS INCLUDING SWITCH CONN FAILURE
         const TARGET_KEYWORDS = [
-            "FAILURE",
+            "SWITCH CONN FAILURE",
             "APP LEVEL ERROR",
             "ATR ERROR",
+            "FAILURE",
             "SUSPECT"
         ];
 
         // Centralized Master Action Guide
         const ACTION_SOLUTIONS = {
+            "SWITCH CONN FAILURE": "Check network switch power, LAN cabling, switch port connectivity, and host gateway IP configuration.",
             "CASH JAM": "Inspect transport belts, cash paths, sensors for torn notes, and clear physical jams.",
             "APP LEVEL ERROR": "Restart Application services, verify ATM application configs, check system logs.",
             "ATR ERROR": "Inspect Smart Card / Dip Reader module, clean contacts, test card driver interface.",
@@ -237,10 +239,10 @@
                     currentDate = inlineDateMatch[1] || inlineDateMatch[2];
                 }
 
-                // Strip timestamps to avoid matching hours/minutes as codes
+                // Strip timestamps to avoid matching hours/minutes as code numbers
                 let sanitizedLine = lineUpper.replace(/\b\d{2}:\d{2}:\d{2}(?::\d{2,3})?\b/g, '');
 
-                // Check for explicit error codes like (11:...) or [11] or ERR 11
+                // Check for explicit error codes like (11:...) or [11] or CODE: 11
                 const explicitCodeMatch = sanitizedLine.match(/\((\d{2})\s*[:\-]\s*([^\)]+)\)/) || 
                                            sanitizedLine.match(/CODE\s*[:\-]?\s*(\d{2})/i) ||
                                            sanitizedLine.match(/\[(\d{2})\]/);
