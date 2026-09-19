@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATM Log Field Dashboard & Exporter</title>
-    <!-- JSZip for Unzipping & SheetJS for Excel Generation -->
+    <!-- JSZip for Unzipping & SheetJS for Excel Exporter -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -43,11 +43,19 @@
         th { background: #0f172a; color: var(--accent-yellow); font-weight: 600; }
         .total-row { font-weight: bold; background: #0f172a; color: var(--accent-green); }
 
+        /* Consolidated Action Panel */
+        .action-panel { margin-top: 15px; background: var(--card-bg); border-radius: 6px; padding: 15px; border: 1px solid var(--border-color); border-left: 5px solid var(--accent-green); }
+        .action-header { font-size: 15px; font-weight: bold; color: var(--accent-green); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
+        .action-item { background: #0f172a; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color); }
+        .action-title { font-weight: bold; color: var(--accent-yellow); font-size: 13px; margin-bottom: 4px; }
+        .action-body { font-size: 12px; color: var(--text-color); }
+        .badge { background: var(--accent-red); color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px; margin-left: 6px; }
+
         .search-box { width: 100%; padding: 12px; margin-top: 15px; box-sizing: border-box; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; color: white; }
         .card { background: var(--card-bg); padding: 12px; margin-top: 10px; border-radius: 6px; border-left: 4px solid var(--accent-blue); border: 1px solid var(--border-color); }
         .kw { color: var(--accent-red); font-weight: bold; }
-        .act { color: var(--accent-green); font-weight: bold; margin: 4px 0; font-size: 13px; }
-        .raw-line { font-size: 11px; color: var(--subtext-color); font-family: monospace; background: #0f172a; padding: 6px; border-radius: 4px; margin-top: 4px; }
+        .raw-line { font-size: 11px; color: var(--subtext-color); font-family: monospace; background: #0f172a; padding: 6px; border-radius: 4px; margin-top: 6px; word-break: break-all; }
     </style>
 </head>
 <body>
@@ -78,18 +86,24 @@
         </div>
     </div>
 
-    <!-- Day-by-Day Matrix -->
+    <!-- Consolidated Action Summary Box -->
+    <div id="actionSummarySection" class="action-panel" style="display:none;">
+        <div class="action-header">🛠️ Consolidated Action Plan (All-in-One Summary)</div>
+        <div id="actionGrid" class="action-grid"></div>
+    </div>
+
+    <!-- Day-by-Day Matrix Table -->
     <div id="dashboardSection" class="table-container" style="display:none;">
-        <h3 style="font-size:14px; margin: 0 0 10px 0; color: var(--accent-yellow);">Day-by-Day Error & Issue Breakdown</h3>
+        <h3 style="font-size:14px; margin: 0 0 10px 0; color: var(--accent-yellow);">Day-by-Day Error & Issue Matrix</h3>
         <div id="tableWrapper"></div>
     </div>
 
-    <input type="text" id="searchFilter" class="search-box" placeholder="🔍 Search by code, date, or log content..." onkeyup="filterHits()" style="display:none;">
+    <input type="text" id="searchFilter" class="search-box" placeholder="🔍 Search individual log records..." onkeyup="filterHits()" style="display:none;">
 
     <div id="results"></div>
 
     <script>
-        // Mapping reference for explicit error code labels
+        // Official Error Code Descriptions
         const CODES = {
             "01": "DISPENSED SUCCESSFULLY",
             "02": "NO NOTES DISPENSED",
@@ -125,25 +139,29 @@
             "99": "UNKNOWN ERROR"
         };
 
-        // Specific, unambiguous multi-word error phrases
-        const EXPLICIT_PHRASES = [
-            "CAMERA FAILURE",
-            "SWITCH CONN FAILURE",
-            "BM ERROR",
-            "CASH JAM",
-            "MOTOR TIMEOUT",
-            "DISPENSER NOT INITIALIZED",
-            "SENSOR FAILURE",
-            "PURGE BIN NOT INSERTED",
-            "CASSETTE INSERTION PROBLEM",
-            "I2C COMM ERROR",
-            "CART COMM ERROR",
-            "SAFE SHUTTER OPEN FAILS",
-            "SAFE SHUTTER CLOSE FAILS"
+        // NEW KEYWORDS REQUESTED
+        const TARGET_KEYWORDS = [
+            "FAILURE",
+            "APP LEVEL ERROR",
+            "ATR ERROR",
+            "SUSPECT"
         ];
+
+        // Centralized Master Action Guide
+        const ACTION_SOLUTIONS = {
+            "CASH JAM": "Inspect transport belts, cash paths, sensors for torn notes, and clear physical jams.",
+            "APP LEVEL ERROR": "Restart Application services, verify ATM application configs, check system logs.",
+            "ATR ERROR": "Inspect Smart Card / Dip Reader module, clean contacts, test card driver interface.",
+            "SUSPECT": "Examine suspect notes bin, test sensor calibration, check note validation module.",
+            "FAILURE": "Check general peripheral hardware connections, power supply state, and driver connectivity.",
+            "SENSOR FAILURE": "Clean optical sensors, inspect harness wiring, and perform sensor test.",
+            "MOTOR TIMEOUT": "Check motor gearing mechanism, mechanical blockage, and power board supply.",
+            "I2C COMM ERROR": "Re-seat internal communication ribbon cables, check motherboard controller connection."
+        };
 
         let aggregatedHits = [];
         let matrixData = {}; 
+        let categoryTotals = {};
 
         async function handleFileSelection(input) {
             const files = input.files;
@@ -153,6 +171,7 @@
             document.getElementById('results').innerHTML = "";
             aggregatedHits = [];
             matrixData = {};
+            categoryTotals = {};
 
             let totalFiles = 0;
 
@@ -201,7 +220,6 @@
             const lines = text.split('\n');
             let currentDate = "Unknown Date";
 
-            // Extract date from filename if present
             const filenameDateMatch = filename.match(/\b(\d{4}[_\-]\d{2}[_\-]\d{2}|\d{2}[_\-]\d{2}[_\-]\d{4})\b/);
             if (filenameDateMatch) {
                 currentDate = filenameDateMatch[0].replace(/_/g, '-');
@@ -213,16 +231,16 @@
 
                 const lineUpper = rawLine.toUpperCase();
 
-                // Extract date from line
+                // Date detection
                 const inlineDateMatch = rawLine.match(/(?:DATE\s*:\s*|DATE\s+)(\d{2}[\/\.-]\d{2}[\/\.-]\d{2,4})|\b(\d{4}[\/\.-]\d{2}[\/\.-]\d{2}|\d{2}[\/\.-]\d{2}[\/\.-]\d{4})\b/i);
                 if (inlineDateMatch) {
                     currentDate = inlineDateMatch[1] || inlineDateMatch[2];
                 }
 
-                // Strip timestamps (e.g., 11:00:07 or 11:00:07:123) to prevent misidentifying hours/minutes as error codes
+                // Strip timestamps to avoid matching hours/minutes as codes
                 let sanitizedLine = lineUpper.replace(/\b\d{2}:\d{2}:\d{2}(?::\d{2,3})?\b/g, '');
 
-                // Check for EXPLICIT parenthetical error code syntax (e.g., "(11:CASH JAM)" or "CODE: 11" or "[11]")
+                // Check for explicit error codes like (11:...) or [11] or ERR 11
                 const explicitCodeMatch = sanitizedLine.match(/\((\d{2})\s*[:\-]\s*([^\)]+)\)/) || 
                                            sanitizedLine.match(/CODE\s*[:\-]?\s*(\d{2})/i) ||
                                            sanitizedLine.match(/\[(\d{2})\]/);
@@ -235,36 +253,35 @@
                     matchedDesc = explicitCodeMatch[2] ? explicitCodeMatch[2].trim() : CODES[matchedCode];
                 }
 
-                // Check for explicit multi-word error phrases
-                let foundPhrase = null;
-                EXPLICIT_PHRASES.forEach(phrase => {
-                    if (sanitizedLine.includes(phrase)) {
-                        foundPhrase = phrase;
+                // Check for requested target keywords
+                let foundKeyword = null;
+                TARGET_KEYWORDS.forEach(kw => {
+                    if (sanitizedLine.includes(kw)) {
+                        foundKeyword = kw;
                     }
                 });
 
-                // Record hit if either explicit code structure or specific error phrase was found
-                if (matchedCode || foundPhrase) {
+                if (matchedCode || foundKeyword) {
                     let unifiedLabel = "";
-                    let action = "";
 
                     if (matchedCode) {
-                        const codeName = matchedDesc || CODES[matchedCode] || "UNKNOWN ERROR";
+                        const codeName = CODES[matchedCode] || matchedDesc || "UNKNOWN ERROR";
                         unifiedLabel = `Code ${matchedCode} (${codeName})`;
-                        action = `[Code ${matchedCode}] ${codeName}`;
                     } else {
-                        unifiedLabel = foundPhrase;
-                        action = `Inspect component failure: ${foundPhrase}`;
+                        unifiedLabel = foundKeyword;
                     }
 
+                    // Count in matrix
                     if (!matrixData[currentDate]) matrixData[currentDate] = {};
                     matrixData[currentDate][unifiedLabel] = (matrixData[currentDate][unifiedLabel] || 0) + 1;
+
+                    // Count overall totals per category
+                    categoryTotals[unifiedLabel] = (categoryTotals[unifiedLabel] || 0) + 1;
 
                     aggregatedHits.push({
                         file: filename,
                         date: currentDate,
                         keyword: unifiedLabel,
-                        action: action,
                         raw: rawLine
                     });
                 }
@@ -277,9 +294,33 @@
             document.getElementById('kpiDates').innerText = Object.keys(matrixData).length;
 
             document.getElementById('kpiSection').style.display = 'grid';
+            document.getElementById('actionSummarySection').style.display = 'block';
             document.getElementById('dashboardSection').style.display = 'block';
             document.getElementById('searchFilter').style.display = 'block';
 
+            // Render Consolidated Action Plan
+            let actionHtml = '';
+            for (let label in categoryTotals) {
+                let count = categoryTotals[label];
+                let recommendation = "Perform diagnostic evaluation on module.";
+
+                // Lookup action recommendation
+                for (let key in ACTION_SOLUTIONS) {
+                    if (label.includes(key)) {
+                        recommendation = ACTION_SOLUTIONS[key];
+                        break;
+                    }
+                }
+
+                actionHtml += `
+                    <div class="action-item">
+                        <div class="action-title">${label} <span class="badge">${count} Hits</span></div>
+                        <div class="action-body"><b>Action:</b> ${recommendation}</div>
+                    </div>`;
+            }
+            document.getElementById('actionGrid').innerHTML = actionHtml;
+
+            // Render Day-by-Day Table
             let activeKeys = new Set();
             for (let d in matrixData) {
                 for (let k in matrixData[d]) activeKeys.add(k);
@@ -323,8 +364,7 @@
                 resultsHtml += `
                     <div class="card">
                         <div style="color:var(--accent-yellow); font-size:11px;">📄 ${hit.file}</div>
-                        <div><b>Date: ${hit.date}</b> | Issue: <span class="kw">${hit.keyword}</span></div>
-                        <div class="act">🔧 ${hit.action}</div>
+                        <div><b>Date: ${hit.date}</b> | Issue Category: <span class="kw">${hit.keyword}</span></div>
                         <div class="raw-line">${hit.raw}</div>
                     </div>`;
             });
@@ -350,35 +390,31 @@
 
             const wb = XLSX.utils.book_new();
 
-            // Sheet 1: Dashboard Matrix
-            let matrixRows = [];
-            let activeKeys = new Set();
-            for (let d in matrixData) {
-                for (let k in matrixData[d]) activeKeys.add(k);
-            }
-            let keyArray = Array.from(activeKeys);
+            // Sheet 1: Action Summary & Daily Matrix
+            let actionRows = [
+                { "Section": "EXECUTIVE ACTION PLAN", "Details / Counts": "", "Recommended Action Point": "" }
+            ];
 
-            for (let date in matrixData) {
-                let rowObj = { "Date": date };
-                let dailyTotal = 0;
-                keyArray.forEach(k => {
-                    let count = matrixData[date][k] || 0;
-                    rowObj[k] = count;
-                    dailyTotal += count;
+            for (let label in categoryTotals) {
+                let rec = "Perform diagnostic evaluation on module.";
+                for (let key in ACTION_SOLUTIONS) {
+                    if (label.includes(key)) { rec = ACTION_SOLUTIONS[key]; break; }
+                }
+                actionRows.push({
+                    "Section": label,
+                    "Details / Counts": `${categoryTotals[label]} Total Hits`,
+                    "Recommended Action Point": rec
                 });
-                rowObj["Daily Total"] = dailyTotal;
-                matrixRows.push(rowObj);
             }
 
-            const wsDashboard = XLSX.utils.json_to_sheet(matrixRows);
-            XLSX.utils.book_append_sheet(wb, wsDashboard, "Dashboard Sheet");
+            const wsDashboard = XLSX.utils.json_to_sheet(actionRows);
+            XLSX.utils.book_append_sheet(wb, wsDashboard, "Action Summary & Matrix");
 
-            // Sheet 2: Data Sheet
+            // Sheet 2: Itemized Data Sheet
             const wsDetails = XLSX.utils.json_to_sheet(aggregatedHits.map(h => ({
                 "Source File": h.file,
                 "Date": h.date,
-                "Error Code / Issue": h.keyword,
-                "Action Point": h.action,
+                "Issue Category": h.keyword,
                 "Raw Log Line": h.raw
             })));
             XLSX.utils.book_append_sheet(wb, wsDetails, "Data Sheet");
