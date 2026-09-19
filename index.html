@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATM Log Field Dashboard & Exporter</title>
-    <!-- Libraries for Unzipping and Professional Excel Generation -->
+    <!-- JSZip for Unzipping & SheetJS for Excel Generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -36,7 +36,7 @@
         .kpi-num { font-size: 22px; font-weight: bold; color: var(--accent-green); }
         .kpi-lbl { font-size: 11px; color: var(--subtext-color); margin-top: 4px; }
 
-        /* Clean Dashboard Matrix Table */
+        /* Matrix Table */
         .table-container { overflow-x: auto; margin-top: 15px; background: var(--card-bg); border-radius: 6px; padding: 12px; border: 1px solid var(--border-color); }
         table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
         th, td { padding: 10px; border: 1px solid var(--border-color); }
@@ -62,7 +62,7 @@
 
     <div id="status" class="status"></div>
 
-    <!-- KPI Summary Section -->
+    <!-- Summary KPIs -->
     <div id="kpiSection" class="kpi-container" style="display:none;">
         <div class="kpi-card">
             <div id="kpiFiles" class="kpi-num">0</div>
@@ -78,7 +78,7 @@
         </div>
     </div>
 
-    <!-- Clean Day-by-Day Dashboard Table -->
+    <!-- Day-by-Day Matrix -->
     <div id="dashboardSection" class="table-container" style="display:none;">
         <h3 style="font-size:14px; margin: 0 0 10px 0; color: var(--accent-yellow);">Day-by-Day Error & Issue Breakdown</h3>
         <div id="tableWrapper"></div>
@@ -89,21 +89,22 @@
     <div id="results"></div>
 
     <script>
+        // Official Error Code Mapping
         const CODES = {
             "01": "DISPENSED SUCCESSFULLY",
-            "02": "MOTOR TIMEOUT",
+            "02": "NO NOTES DISPENSED",
             "03": "SENSOR FAILURE",
             "04": "MAX TWIN LIMIT EXCEEDED",
             "05": "PRESENTED SUCCESSFULLY",
-            "06": "PRESENTATION TRAY NOTHOMED",
-            "07": "BULKPURGE SUCCESSFULL",
-            "08": "MOTOR TIMEOUT NOTHOMED",
+            "06": "PRESENTATION TRAY NOT HOMED",
+            "07": "BULK PURGE SUCCESSFUL",
+            "08": "MOTOR TIMEOUT NOT HOMED",
             "09": "DISPENSER INITIALIZED",
             "10": "DISPENSER NOT INITIALIZED",
             "11": "CASH JAM",
             "12": "NO CASH ON TRAY",
-            "13": "SUSPECT CASH PICKEDUP",
-            "14": "CASH JAM NOTHOMED",
+            "13": "SUSPECT CASH PICKED UP",
+            "14": "CASH JAM NOT HOMED",
             "15": "CASSETTE NOT ENABLED",
             "16": "NO NOTE LIMIT EXCEEDED",
             "17": "NOTE THRESHOLD NOT SET",
@@ -124,10 +125,22 @@
             "99": "UNKNOWN ERROR"
         };
 
-        const KEYWORDS = ["CASH JAM", "MOTOR TIMEOUT", "DISPENSER NOT INITIALIZED", "SENSOR FAILURE", "PURGE BIN NOT INSERTED", "ERROR", "FAIL", "REJECT", "FAILURE", "SUSPECT", "E*2", "POWER CYCLE", "DRDY", "I/O", "CRITICAL", "TIMEOUT"];
+        const KEYWORDS = [
+            "DISPENSER FAILURE",
+            "CASH JAM",
+            "MOTOR TIMEOUT",
+            "DISPENSER NOT INITIALIZED",
+            "SENSOR FAILURE",
+            "PURGE BIN NOT INSERTED",
+            "SWITCH CONN FAILURE",
+            "BM ERROR",
+            "FAILURE",
+            "SUSPECT",
+            "POWER CYCLE"
+        ];
 
         let aggregatedHits = [];
-        let matrixData = {}; // Format: { date: { code_label: count } }
+        let matrixData = {}; 
 
         async function handleFileSelection(input) {
             const files = input.files;
@@ -185,7 +198,7 @@
             const lines = text.split('\n');
             let currentDate = "Unknown Date";
 
-            // Extract filename date fallback
+            // Extract date from file name if present
             const filenameDateMatch = filename.match(/\b(\d{4}[_\-]\d{2}[_\-]\d{2}|\d{2}[_\-]\d{2}[_\-]\d{4})\b/);
             if (filenameDateMatch) {
                 currentDate = filenameDateMatch[0].replace(/_/g, '-');
@@ -194,44 +207,61 @@
             lines.forEach(line => {
                 const lineUpper = line.toUpperCase();
 
-                // Extract line timestamp
+                // Extract date from log line
                 const inlineDateMatch = line.match(/(?:DATE\s*:\s*|DATE\s+)(\d{2}[\/\.-]\d{2}[\/\.-]\d{2,4})|\b(\d{4}[\/\.-]\d{2}[\/\.-]\d{2}|\d{2}[\/\.-]\d{2}[\/\.-]\d{4})\b/i);
                 if (inlineDateMatch) {
                     currentDate = inlineDateMatch[1] || inlineDateMatch[2];
                 }
 
+                // Precision extraction for error codes: matches (02:...), (02 - ...), or [02]
+                const explicitCodeMatch = lineUpper.match(/\((\d{2})\s*[:\-]\s*([^\)]+)\)/) || 
+                                           lineUpper.match(/ERROR\s+CODE\s*[:\-]?\s*(\d{2})/i) ||
+                                           lineUpper.match(/\[(\d{2})\]/);
+
+                let matchedCode = null;
+                let matchedDesc = null;
+
+                if (explicitCodeMatch) {
+                    matchedCode = explicitCodeMatch[1];
+                    matchedDesc = explicitCodeMatch[2] ? explicitCodeMatch[2].trim() : (CODES[matchedCode] || "UNKNOWN ERROR");
+                }
+
+                // Check keyword matching
+                let foundKeyword = null;
                 KEYWORDS.forEach(kw => {
-                    const kwRegex = new RegExp(kw.replace('*', '.*'), 'i');
-                    if (kwRegex.test(lineUpper)) {
-                        
-                        // Extract error code
-                        const codeMatch = line.match(/\b(\d{2})\b/);
-                        let action = "Inspect general hardware state";
-                        let unifiedLabel = kw;
-
-                        // Consolidate duplicate codes (e.g., Code 02) into a single code metric
-                        if (codeMatch && CODES[codeMatch[1]]) {
-                            action = `[Code ${codeMatch[1]}] ${CODES[codeMatch[1]]}`;
-                            unifiedLabel = `Code ${codeMatch[1]} (${CODES[codeMatch[1]]})`;
-                        }
-
-                        if (!matrixData[currentDate]) matrixData[currentDate] = {};
-                        matrixData[currentDate][unifiedLabel] = (matrixData[currentDate][unifiedLabel] || 0) + 1;
-
-                        aggregatedHits.push({
-                            file: filename,
-                            date: currentDate,
-                            keyword: unifiedLabel,
-                            action: action,
-                            raw: line.trim()
-                        });
+                    if (lineUpper.includes(kw)) {
+                        foundKeyword = kw;
                     }
                 });
+
+                // Only record hit if a explicit error code pattern OR an explicit error keyword was found
+                if (matchedCode || foundKeyword) {
+                    let unifiedLabel = "";
+                    let action = "";
+
+                    if (matchedCode) {
+                        unifiedLabel = `Code ${matchedCode} (${CODES[matchedCode] || matchedDesc})`;
+                        action = `[Code ${matchedCode}] ${CODES[matchedCode] || matchedDesc}`;
+                    } else {
+                        unifiedLabel = foundKeyword;
+                        action = `Inspect hardware state for: ${foundKeyword}`;
+                    }
+
+                    if (!matrixData[currentDate]) matrixData[currentDate] = {};
+                    matrixData[currentDate][unifiedLabel] = (matrixData[currentDate][unifiedLabel] || 0) + 1;
+
+                    aggregatedHits.push({
+                        file: filename,
+                        date: currentDate,
+                        keyword: unifiedLabel,
+                        action: action,
+                        raw: line.trim()
+                    });
+                }
             });
         }
 
         function renderDashboard(fileCount) {
-            // Update KPIs
             document.getElementById('kpiFiles').innerText = fileCount;
             document.getElementById('kpiHits').innerText = aggregatedHits.length;
             document.getElementById('kpiDates').innerText = Object.keys(matrixData).length;
@@ -310,7 +340,7 @@
 
             const wb = XLSX.utils.book_new();
 
-            // Sheet 1: Day-by-Day Dashboard Matrix
+            // Sheet 1: Dashboard Matrix
             let matrixRows = [];
             let activeKeys = new Set();
             for (let d in matrixData) {
@@ -333,17 +363,16 @@
             const wsDashboard = XLSX.utils.json_to_sheet(matrixRows);
             XLSX.utils.book_append_sheet(wb, wsDashboard, "Dashboard Sheet");
 
-            // Sheet 2: Itemized Log Data
+            // Sheet 2: Data Sheet
             const wsDetails = XLSX.utils.json_to_sheet(aggregatedHits.map(h => ({
                 "Source File": h.file,
                 "Date": h.date,
                 "Error Code / Issue": h.keyword,
                 "Action Point": h.action,
-                "Raw Log String": h.raw
+                "Raw Log Line": h.raw
             })));
             XLSX.utils.book_append_sheet(wb, wsDetails, "Data Sheet");
 
-            // Save .xlsx file directly
             XLSX.writeFile(wb, "ATM_Troubleshooting_Dashboard_Report.xlsx");
         }
     </script>
