@@ -9,53 +9,229 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
+            --bg-color: #0b1120;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-inner: #0f172a;
             --accent-blue: #38bdf8;
-            --accent-green: #22c55e;
-            --accent-red: #f87171;
-            --accent-yellow: #facc15;
-            --text-color: #f8fafc;
-            --subtext-color: #94a3b8;
+            --accent-green: #10b981;
+            --accent-red: #f43f5e;
+            --accent-yellow: #f59e0b;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
             --border-color: #334155;
+            --border-highlight: rgba(56, 189, 248, 0.2);
         }
 
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg-color); color: var(--text-color); padding: 15px; margin: 0; }
-        h2 { margin-top: 0; font-size: 20px; text-align: center; color: var(--accent-blue); }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            background: var(--bg-color); 
+            background-image: radial-gradient(at 50% 0%, rgba(56, 189, 248, 0.08) 0px, transparent 50%),
+                              radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main); 
+            padding: 24px; 
+            margin: 0; 
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        h2 { 
+            margin: 0 0 20px 0; 
+            font-size: 22px; 
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            text-align: center; 
+            color: var(--accent-blue); 
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+        }
         
-        .btn-group { display: flex; gap: 10px; margin-bottom: 12px; }
-        button { flex: 1; background: var(--accent-blue); color: #0f172a; border: none; padding: 14px; font-size: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        button.excel-btn { background: var(--accent-green); color: #ffffff; }
-        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-group { display: flex; gap: 14px; margin-bottom: 16px; }
+        button { 
+            flex: 1; 
+            background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%); 
+            color: #ffffff; 
+            border: none; 
+            padding: 14px 20px; 
+            font-size: 14px; 
+            border-radius: 8px; 
+            font-weight: 600; 
+            letter-spacing: 0.01em;
+            cursor: pointer; 
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.35);
+        }
+        button.excel-btn { 
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+            color: #ffffff; 
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+        }
+        button.excel-btn:hover:not(:disabled) {
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+        }
+        button:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
         input[type="file"] { display: none; }
-        .status { margin-top: 5px; font-size: 13px; color: var(--accent-yellow); text-align: center; }
+        
+        .status { 
+            margin: 10px 0 18px 0; 
+            font-size: 13px; 
+            font-weight: 500;
+            color: var(--accent-yellow); 
+            text-align: center; 
+            letter-spacing: 0.01em;
+        }
 
         /* KPI Dashboard */
-        .kpi-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
-        .kpi-card { background: var(--card-bg); padding: 12px; border-radius: 6px; text-align: center; border: 1px solid var(--border-color); }
-        .kpi-num { font-size: 22px; font-weight: bold; color: var(--accent-green); }
-        .kpi-lbl { font-size: 11px; color: var(--subtext-color); margin-top: 4px; }
-
-        /* Day-by-Day Matrix Table */
-        .table-container { overflow-x: auto; margin-top: 15px; background: var(--card-bg); border-radius: 6px; padding: 12px; border: 1px solid var(--border-color); }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
-        th, td { padding: 10px; border: 1px solid var(--border-color); }
-        th { background: #0f172a; color: var(--accent-yellow); font-weight: 600; }
-        .total-row { font-weight: bold; background: #0f172a; color: var(--accent-green); }
+        .kpi-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 18px; }
+        .kpi-card { 
+            background: var(--card-bg); 
+            backdrop-filter: blur(12px);
+            padding: 16px; 
+            border-radius: 10px; 
+            text-align: center; 
+            border: 1px solid var(--border-color); 
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: border-color 0.2s ease;
+        }
+        .kpi-card:hover { border-color: var(--border-highlight); }
+        .kpi-num { 
+            font-size: 28px; 
+            font-weight: 800; 
+            color: var(--accent-green); 
+            letter-spacing: -0.03em;
+            line-height: 1;
+        }
+        .kpi-lbl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-sub); margin-top: 6px; }
 
         /* Consolidated Action Panel */
-        .action-panel { margin-top: 15px; background: var(--card-bg); border-radius: 6px; padding: 15px; border: 1px solid var(--border-color); border-left: 5px solid var(--accent-green); }
-        .action-header { font-size: 15px; font-weight: bold; color: var(--accent-green); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-        .action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
-        .action-item { background: #0f172a; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color); }
-        .action-title { font-weight: bold; color: var(--accent-yellow); font-size: 13px; margin-bottom: 4px; }
-        .action-body { font-size: 12px; color: var(--text-color); }
-        .badge { background: var(--accent-red); color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px; margin-left: 6px; }
+        .action-panel { 
+            margin-top: 20px; 
+            background: var(--card-bg); 
+            backdrop-filter: blur(12px);
+            border-radius: 10px; 
+            padding: 18px; 
+            border: 1px solid var(--border-color); 
+            border-left: 4px solid var(--accent-green); 
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+        .action-header { 
+            font-size: 14px; 
+            font-weight: 700; 
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            color: var(--accent-green); 
+            margin-bottom: 14px; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+        }
+        .action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+        .action-item { 
+            background: var(--card-inner); 
+            padding: 14px; 
+            border-radius: 8px; 
+            border: 1px solid var(--border-color); 
+            transition: all 0.2s ease;
+        }
+        .action-item:hover {
+            border-color: var(--border-highlight);
+            transform: translateY(-1px);
+        }
+        .action-title { 
+            font-weight: 700; 
+            color: var(--accent-yellow); 
+            font-size: 13px; 
+            margin-bottom: 6px; 
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .action-body { font-size: 12px; color: var(--text-main); line-height: 1.5; }
+        .badge { 
+            background: rgba(244, 63, 94, 0.15); 
+            color: var(--accent-red); 
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            padding: 2px 8px; 
+            border-radius: 12px; 
+            font-size: 11px; 
+            font-weight: 700; 
+            letter-spacing: 0.02em;
+        }
 
-        .search-box { width: 100%; padding: 12px; margin-top: 15px; box-sizing: border-box; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; color: white; }
-        .card { background: var(--card-bg); padding: 12px; margin-top: 10px; border-radius: 6px; border-left: 4px solid var(--accent-blue); border: 1px solid var(--border-color); }
-        .kw { color: var(--accent-red); font-weight: bold; }
-        .raw-line { font-size: 11px; color: var(--subtext-color); font-family: monospace; background: #0f172a; padding: 6px; border-radius: 4px; margin-top: 6px; word-break: break-all; }
+        /* Day-by-Day Matrix Table */
+        .table-container { 
+            overflow-x: auto; 
+            margin-top: 20px; 
+            background: var(--card-bg); 
+            backdrop-filter: blur(12px);
+            border-radius: 10px; 
+            padding: 18px; 
+            border: 1px solid var(--border-color); 
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; text-align: left; }
+        th, td { padding: 10px 14px; border-bottom: 1px solid var(--border-color); }
+        th { 
+            background: var(--card-inner); 
+            color: var(--accent-yellow); 
+            font-weight: 700; 
+            font-size: 12px;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            border-top: 1px solid var(--border-color);
+        }
+        th:first-child { border-top-left-radius: 6px; border-left: 1px solid var(--border-color); }
+        th:last-child { border-top-right-radius: 6px; border-right: 1px solid var(--border-color); }
+        td { border-right: 1px solid var(--border-color); }
+        td:first-child { border-left: 1px solid var(--border-color); }
+        .total-row { font-weight: 700; background: var(--card-inner); color: var(--accent-green); }
+
+        .search-box { 
+            width: 100%; 
+            padding: 12px 16px; 
+            margin-top: 20px; 
+            box-sizing: border-box; 
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: 8px; 
+            color: white; 
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+        .search-box:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15); }
+
+        .card { 
+            background: var(--card-bg); 
+            backdrop-filter: blur(12px);
+            padding: 14px 16px; 
+            margin-top: 12px; 
+            border-radius: 8px; 
+            border-left: 4px solid var(--accent-blue); 
+            border-top: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+        }
+        .kw { color: var(--accent-red); font-weight: 700; }
+        .raw-line { 
+            font-size: 11px; 
+            color: var(--text-sub); 
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; 
+            background: var(--card-inner); 
+            padding: 8px 12px; 
+            border-radius: 6px; 
+            margin-top: 8px; 
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            word-break: break-all; 
+        }
     </style>
 </head>
 <body>
@@ -94,7 +270,7 @@
 
     <!-- Day-by-Day Matrix Table -->
     <div id="dashboardSection" class="table-container" style="display:none;">
-        <h3 style="font-size:14px; margin: 0 0 10px 0; color: var(--accent-yellow);">Day-by-Day Error & Issue Matrix</h3>
+        <h3 style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em; margin: 0 0 12px 0; color: var(--accent-yellow);">Day-by-Day Error & Issue Matrix</h3>
         <div id="tableWrapper"></div>
     </div>
 
@@ -222,7 +398,7 @@
             const lines = text.split('\n');
             let currentDate = "Unknown Date";
 
-            const filenameDateMatch = filename.match(/\b(\d{4}[_\-]\d{2}[_\-]\d{2}|\d{2}[_\-]\d{2}[_\-]\d{4})\b/);
+            const filenameDateMatch = filename.match(/\b(\d{4}[_\-]\d{2}[_\-]\d{2}|\d{2}[_\-]\d{4})\b/);
             if (filenameDateMatch) {
                 currentDate = filenameDateMatch[0].replace(/_/g, '-');
             }
@@ -316,7 +492,7 @@
 
                 actionHtml += `
                     <div class="action-item">
-                        <div class="action-title">${label} <span class="badge">${count} Hits</span></div>
+                        <div class="action-title"><span>${label}</span> <span class="badge">${count} Hits</span></div>
                         <div class="action-body"><b>Action:</b> ${recommendation}</div>
                     </div>`;
             }
@@ -365,7 +541,7 @@
             hits.forEach(hit => {
                 resultsHtml += `
                     <div class="card">
-                        <div style="color:var(--accent-yellow); font-size:11px;">📄 ${hit.file}</div>
+                        <div style="color:var(--accent-yellow); font-size:11px; font-weight:600; margin-bottom: 2px;">📄 ${hit.file}</div>
                         <div><b>Date: ${hit.date}</b> | Issue Category: <span class="kw">${hit.keyword}</span></div>
                         <div class="raw-line">${hit.raw}</div>
                     </div>`;
