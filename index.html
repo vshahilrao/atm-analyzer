@@ -36,7 +36,7 @@
         .kpi-num { font-size: 22px; font-weight: bold; color: var(--accent-green); }
         .kpi-lbl { font-size: 11px; color: var(--subtext-color); margin-top: 4px; }
 
-        /* Matrix Table */
+        /* Day-by-Day Matrix Table */
         .table-container { overflow-x: auto; margin-top: 15px; background: var(--card-bg); border-radius: 6px; padding: 12px; border: 1px solid var(--border-color); }
         table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
         th, td { padding: 10px; border: 1px solid var(--border-color); }
@@ -89,7 +89,7 @@
     <div id="results"></div>
 
     <script>
-        // Official Error Code Mapping
+        // Mapping reference for explicit error code labels
         const CODES = {
             "01": "DISPENSED SUCCESSFULLY",
             "02": "NO NOTES DISPENSED",
@@ -125,18 +125,21 @@
             "99": "UNKNOWN ERROR"
         };
 
-        const KEYWORDS = [
-            "DISPENSER FAILURE",
+        // Specific, unambiguous multi-word error phrases
+        const EXPLICIT_PHRASES = [
+            "CAMERA FAILURE",
+            "SWITCH CONN FAILURE",
+            "BM ERROR",
             "CASH JAM",
             "MOTOR TIMEOUT",
             "DISPENSER NOT INITIALIZED",
             "SENSOR FAILURE",
             "PURGE BIN NOT INSERTED",
-            "SWITCH CONN FAILURE",
-            "BM ERROR",
-            "FAILURE",
-            "SUSPECT",
-            "POWER CYCLE"
+            "CASSETTE INSERTION PROBLEM",
+            "I2C COMM ERROR",
+            "CART COMM ERROR",
+            "SAFE SHUTTER OPEN FAILS",
+            "SAFE SHUTTER CLOSE FAILS"
         ];
 
         let aggregatedHits = [];
@@ -198,53 +201,60 @@
             const lines = text.split('\n');
             let currentDate = "Unknown Date";
 
-            // Extract date from file name if present
+            // Extract date from filename if present
             const filenameDateMatch = filename.match(/\b(\d{4}[_\-]\d{2}[_\-]\d{2}|\d{2}[_\-]\d{2}[_\-]\d{4})\b/);
             if (filenameDateMatch) {
                 currentDate = filenameDateMatch[0].replace(/_/g, '-');
             }
 
             lines.forEach(line => {
-                const lineUpper = line.toUpperCase();
+                const rawLine = line.trim();
+                if (!rawLine) return;
 
-                // Extract date from log line
-                const inlineDateMatch = line.match(/(?:DATE\s*:\s*|DATE\s+)(\d{2}[\/\.-]\d{2}[\/\.-]\d{2,4})|\b(\d{4}[\/\.-]\d{2}[\/\.-]\d{2}|\d{2}[\/\.-]\d{2}[\/\.-]\d{4})\b/i);
+                const lineUpper = rawLine.toUpperCase();
+
+                // Extract date from line
+                const inlineDateMatch = rawLine.match(/(?:DATE\s*:\s*|DATE\s+)(\d{2}[\/\.-]\d{2}[\/\.-]\d{2,4})|\b(\d{4}[\/\.-]\d{2}[\/\.-]\d{2}|\d{2}[\/\.-]\d{2}[\/\.-]\d{4})\b/i);
                 if (inlineDateMatch) {
                     currentDate = inlineDateMatch[1] || inlineDateMatch[2];
                 }
 
-                // Precision extraction for error codes: matches (02:...), (02 - ...), or [02]
-                const explicitCodeMatch = lineUpper.match(/\((\d{2})\s*[:\-]\s*([^\)]+)\)/) || 
-                                           lineUpper.match(/ERROR\s+CODE\s*[:\-]?\s*(\d{2})/i) ||
-                                           lineUpper.match(/\[(\d{2})\]/);
+                // Strip timestamps (e.g., 11:00:07 or 11:00:07:123) to prevent misidentifying hours/minutes as error codes
+                let sanitizedLine = lineUpper.replace(/\b\d{2}:\d{2}:\d{2}(?::\d{2,3})?\b/g, '');
+
+                // Check for EXPLICIT parenthetical error code syntax (e.g., "(11:CASH JAM)" or "CODE: 11" or "[11]")
+                const explicitCodeMatch = sanitizedLine.match(/\((\d{2})\s*[:\-]\s*([^\)]+)\)/) || 
+                                           sanitizedLine.match(/CODE\s*[:\-]?\s*(\d{2})/i) ||
+                                           sanitizedLine.match(/\[(\d{2})\]/);
 
                 let matchedCode = null;
                 let matchedDesc = null;
 
                 if (explicitCodeMatch) {
                     matchedCode = explicitCodeMatch[1];
-                    matchedDesc = explicitCodeMatch[2] ? explicitCodeMatch[2].trim() : (CODES[matchedCode] || "UNKNOWN ERROR");
+                    matchedDesc = explicitCodeMatch[2] ? explicitCodeMatch[2].trim() : CODES[matchedCode];
                 }
 
-                // Check keyword matching
-                let foundKeyword = null;
-                KEYWORDS.forEach(kw => {
-                    if (lineUpper.includes(kw)) {
-                        foundKeyword = kw;
+                // Check for explicit multi-word error phrases
+                let foundPhrase = null;
+                EXPLICIT_PHRASES.forEach(phrase => {
+                    if (sanitizedLine.includes(phrase)) {
+                        foundPhrase = phrase;
                     }
                 });
 
-                // Only record hit if a explicit error code pattern OR an explicit error keyword was found
-                if (matchedCode || foundKeyword) {
+                // Record hit if either explicit code structure or specific error phrase was found
+                if (matchedCode || foundPhrase) {
                     let unifiedLabel = "";
                     let action = "";
 
                     if (matchedCode) {
-                        unifiedLabel = `Code ${matchedCode} (${CODES[matchedCode] || matchedDesc})`;
-                        action = `[Code ${matchedCode}] ${CODES[matchedCode] || matchedDesc}`;
+                        const codeName = matchedDesc || CODES[matchedCode] || "UNKNOWN ERROR";
+                        unifiedLabel = `Code ${matchedCode} (${codeName})`;
+                        action = `[Code ${matchedCode}] ${codeName}`;
                     } else {
-                        unifiedLabel = foundKeyword;
-                        action = `Inspect hardware state for: ${foundKeyword}`;
+                        unifiedLabel = foundPhrase;
+                        action = `Inspect component failure: ${foundPhrase}`;
                     }
 
                     if (!matrixData[currentDate]) matrixData[currentDate] = {};
@@ -255,7 +265,7 @@
                         date: currentDate,
                         keyword: unifiedLabel,
                         action: action,
-                        raw: line.trim()
+                        raw: rawLine
                     });
                 }
             });
