@@ -7,6 +7,8 @@
     <!-- JSZip for Unzipping & SheetJS for Excel Exporter -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- HTML5 QR Code Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root {
             --bg-color: #090d16;
@@ -16,6 +18,7 @@
             --accent-blue: #38bdf8;
             --accent-green: #10b981;
             --accent-red: #f43f5e;
+            --accent-purple: #8b5cf6;
             --accent-yellow: #f59e0b;
             --text-main: #f8fafc;
             --text-sub: #94a3b8;
@@ -67,7 +70,7 @@
             background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%); 
             color: #ffffff; 
             border: 1px solid rgba(255, 255, 255, 0.15); 
-            padding: 16px 24px; 
+            padding: 16px 20px; 
             font-size: 14px; 
             border-radius: 10px; 
             font-weight: 700; 
@@ -85,6 +88,15 @@
             transform: translateY(-2px);
             box-shadow: 0 12px 25px -4px rgba(37, 99, 235, 0.6);
             border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        button.qr-btn {
+            background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+            box-shadow: 0 8px 20px -4px rgba(168, 85, 247, 0.35);
+        }
+
+        button.qr-btn:hover:not(:disabled) {
+            box-shadow: 0 12px 25px -4px rgba(168, 85, 247, 0.55);
         }
 
         button.excel-btn { 
@@ -257,7 +269,7 @@
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(4, 7, 13, 0.8);
+            background: rgba(4, 7, 13, 0.85);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             z-index: 999;
@@ -338,6 +350,13 @@
             font-size: 13.5px;
             color: var(--text-main);
             line-height: 1.5;
+        }
+
+        #qr-reader {
+            width: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
         }
 
         /* Day-by-Day Matrix Table */
@@ -451,6 +470,7 @@
 
     <div class="btn-group">
         <button onclick="document.getElementById('fileInput').click()">📂 Upload Logs / ZIP</button>
+        <button class="qr-btn" onclick="startQrScanner()">📷 Scan QR Code</button>
         <button id="downloadBtn" class="excel-btn" onclick="exportToExcel()" disabled>📊 Download Excel Report</button>
     </div>
     <input type="file" id="fileInput" multiple accept=".txt,.log,.zip" onchange="handleFileSelection(this)">
@@ -481,18 +501,34 @@
     </div>
 
     <!-- Interactive Action Popup Modal -->
-    <div id="actionModal" class="modal-overlay" onclick="closeModal(event)">
+    <div id="actionModal" class="modal-overlay" onclick="closeModal(event, 'actionModal')">
         <div class="modal-content">
             <div class="modal-header">
                 <div>
                     <div id="modalTitle" class="modal-title">Error Details</div>
                     <div id="modalCount" style="font-size: 12px; color: var(--text-sub); margin-top: 4px;">0 Hits</div>
                 </div>
-                <button class="close-btn" onclick="hideModal()">✖</button>
+                <button class="close-btn" onclick="hideModal('actionModal')">✖</button>
             </div>
             <div class="modal-body">
                 <div class="action-label">🛠️ Recommended Action Plan</div>
                 <div id="modalActionText" class="action-text"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Scanner Modal Overlay -->
+    <div id="qrModal" class="modal-overlay" onclick="closeModal(event, 'qrModal')">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">Scan QR Code for EJ Logs</div>
+                    <div style="font-size: 12px; color: var(--text-sub); margin-top: 4px;">Point camera at QR code containing EJ ZIP link</div>
+                </div>
+                <button class="close-btn" onclick="stopQrScanner()">✖</button>
+            </div>
+            <div class="modal-body">
+                <div id="qr-reader"></div>
             </div>
         </div>
     </div>
@@ -569,19 +605,16 @@
         let aggregatedHits = [];
         let matrixData = {}; 
         let categoryTotals = {};
+        let html5QrCode = null;
 
         async function handleFileSelection(input) {
             const files = input.files;
             if (!files.length) return;
 
+            resetState();
             document.getElementById('status').innerText = "Analyzing log files...";
-            document.getElementById('results').innerHTML = "";
-            aggregatedHits = [];
-            matrixData = {};
-            categoryTotals = {};
 
             let totalFiles = 0;
-
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 if (file.name.endsWith('.zip')) {
@@ -593,15 +626,7 @@
                 }
             }
 
-            renderDashboard(totalFiles);
-            document.getElementById('status').innerText = `Completed processing ${totalFiles} file(s). Found ${aggregatedHits.length} total hits.`;
-            
-            const downloadBtn = document.getElementById('downloadBtn');
-            if (aggregatedHits.length > 0) {
-                downloadBtn.removeAttribute('disabled');
-            } else {
-                downloadBtn.setAttribute('disabled', 'true');
-            }
+            finishProcessing(totalFiles);
         }
 
         async function processZipFile(zipFile) {
@@ -621,6 +646,78 @@
                 alert("Error unzipping file: " + err.message);
             }
             return processed;
+        }
+
+        /* QR Scanner Logic */
+        function startQrScanner() {
+            document.getElementById('qrModal').style.display = 'flex';
+            
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("qr-reader");
+            }
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                async (decodedText) => {
+                    stopQrScanner();
+                    await fetchAndProcessQrZip(decodedText);
+                },
+                (errorMessage) => {
+                    // Ignore transient scanning errors
+                }
+            ).catch(err => {
+                alert("Unable to access camera: " + err);
+                stopQrScanner();
+            });
+        }
+
+        function stopQrScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('qrModal').style.display = 'none';
+                }).catch(() => {
+                    document.getElementById('qrModal').style.display = 'none';
+                });
+            } else {
+                document.getElementById('qrModal').style.display = 'none';
+            }
+        }
+
+        async function fetchAndProcessQrZip(url) {
+            try {
+                document.getElementById('status').innerText = `Fetching EJ Logs from scanned QR link: ${url}...`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status} - Failed to fetch ZIP`);
+                
+                const blob = await response.blob();
+                resetState();
+
+                const totalFiles = await processZipFile(blob);
+                finishProcessing(totalFiles);
+            } catch (err) {
+                document.getElementById('status').innerText = "QR Fetch Failed. Ensure link is a valid CORS-enabled direct ZIP URL.";
+                alert("Failed to process QR Code URL: " + err.message);
+            }
+        }
+
+        function resetState() {
+            document.getElementById('results').innerHTML = "";
+            aggregatedHits = [];
+            matrixData = {};
+            categoryTotals = {};
+        }
+
+        function finishProcessing(totalFiles) {
+            renderDashboard(totalFiles);
+            document.getElementById('status').innerText = `Completed processing ${totalFiles} file(s). Found ${aggregatedHits.length} total hits.`;
+            
+            const downloadBtn = document.getElementById('downloadBtn');
+            if (aggregatedHits.length > 0) {
+                downloadBtn.removeAttribute('disabled');
+            } else {
+                downloadBtn.setAttribute('disabled', 'true');
+            }
         }
 
         function parseLogContent(filename, text) {
@@ -774,13 +871,17 @@
             document.getElementById('actionModal').style.display = 'flex';
         }
 
-        function hideModal() {
-            document.getElementById('actionModal').style.display = 'none';
+        function hideModal(modalId) {
+            if (modalId === 'qrModal') {
+                stopQrScanner();
+            } else {
+                document.getElementById(modalId).style.display = 'none';
+            }
         }
 
-        function closeModal(event) {
-            if (event.target.id === 'actionModal') {
-                hideModal();
+        function closeModal(event, modalId) {
+            if (event.target.id === modalId) {
+                hideModal(modalId);
             }
         }
 
