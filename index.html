@@ -127,7 +127,7 @@
             letter-spacing: 0.02em;
         }
 
-        /* KPI Dashboard - Updated to 2 columns */
+        /* KPI Dashboard */
         .kpi-container { 
             display: grid; 
             grid-template-columns: repeat(2, 1fr); 
@@ -468,18 +468,13 @@
     <div id="results"></div>
 
     <script>
-        // Official Error Code Descriptions
-        const CODES = {
-            "00": "OPERATION SUCCESSFUL",
-            "01": "DISPENSED SUCCESSFULLY",
+        // Official Error Code Descriptions (ONLY FAULTS/ERRORS)
+        const ERROR_CODES = {
             "02": "NO NOTES DISPENSED",
             "03": "SENSOR FAILURE",
             "04": "MAX TWIN LIMIT EXCEEDED",
-            "05": "PRESENTED SUCCESSFULLY",
             "06": "PRESENTATION TRAY NOT HOMED",
-            "07": "BULK PURGE SUCCESSFUL",
             "08": "MOTOR TIMEOUT NOT HOMED",
-            "09": "DISPENSER INITIALIZED",
             "10": "DISPENSER NOT INITIALIZED",
             "11": "CASH JAM",
             "12": "NO CASH ON TRAY",
@@ -524,7 +519,8 @@
             "FAILURE": "Check general peripheral hardware connections, power supply state, and driver connectivity.",
             "SENSOR FAILURE": "Clean optical sensors, inspect harness wiring, and perform sensor test.",
             "MOTOR TIMEOUT": "Check motor gearing mechanism, mechanical blockage, and power board supply.",
-            "I2C COMM ERROR": "Re-seat internal communication ribbon cables, check motherboard controller connection."
+            "I2C COMM ERROR": "Re-seat internal communication ribbon cables, check motherboard controller connection.",
+            "DISPENSER NOT INITIALIZED": "Check dispenser power cable, controller serial connection, and initialize dispenser via maintenance software."
         };
 
         let aggregatedHits = [];
@@ -631,7 +627,7 @@
 
         function finishProcessing(totalFiles) {
             renderDashboard(totalFiles);
-            document.getElementById('status').innerText = `Completed processing ${totalFiles} file(s). Found ${aggregatedHits.length} total hits.`;
+            document.getElementById('status').innerText = `Completed processing ${totalFiles} file(s). Found ${aggregatedHits.length} total error hits.`;
             
             const downloadBtn = document.getElementById('downloadBtn');
             if (aggregatedHits.length > 0) {
@@ -656,31 +652,37 @@
 
                 const lineUpper = rawLine.toUpperCase();
 
+                // Ignore non-error operational logs (e.g., balance check, successful withdrawal)
+                if (lineUpper.includes("AVAIL BAL") || lineUpper.includes("WITHDRAWAL RS.")) {
+                    return;
+                }
+
                 // Extract date
-                const inlineDateMatch = rawLine.match(/(?:DATE\s*:\s*|DATE\s+)(\d{2}[\/\.-]\d{2}[\/\.-]\d{2,4})|\b(\d{4}[\/\.-]\d{2}[\/\.-]\d{2}|\d{2}[\/\.-]\d{2}[\/\.-]\d{4})\b/i);
+                const inlineDateMatch = rawLine.match(/(?:DATE\s*:\s*|DATE\s+)(\d{2}[\/\.-]\d{2}[\/\.-]\d{2,4})|\b(\d{4}[\/\.-]\d{2}[\/\.-]\d{4}|\d{2}[\/\.-]\d{2}[\/\.-]\d{4})\b/i);
                 if (inlineDateMatch) {
                     currentDate = inlineDateMatch[1] || inlineDateMatch[2];
                 }
 
-                // Strip timestamps to prevent matching time elements as codes
-                let sanitizedLine = lineUpper.replace(/\b\d{2}:\d{2}:\d{2}(?::\d{2,3})?\b/g, '');
+                // Strip timestamps (HH:MM:SS) and dispense quantity specs (e.g. 3:1,10;) to prevent false positive code triggers
+                let sanitizedLine = lineUpper
+                    .replace(/\b\d{2}:\d{2}:\d{2}(?::\d{2,3})?\b/g, '')
+                    .replace(/:\s*\d+:\d+,\d+;/g, '');
 
                 let matchedCode = null;
                 let matchedDesc = null;
 
-                // Strict 2-digit code detection to avoid matching 3-digit response codes like 051/000
-                const explicitCodeMatch = sanitizedLine.match(/\b(?:CODE|ERROR|RESP|RESPONSE)?\s*[:\-]?\s*\(?(\d{2})\)?\b/i);
+                // Match explicit error code pattern
+                const explicitCodeMatch = sanitizedLine.match(/\b(?:CODE|ERROR|RESP|RESPONSE)\s*[:\-]?\s*\(?(\d{2})\)?\b/i);
 
                 if (explicitCodeMatch) {
                     const potentialCode = explicitCodeMatch[1];
-                    // Verify if it is a known code or explicit error indicator
-                    if (CODES[potentialCode]) {
+                    if (ERROR_CODES[potentialCode]) {
                         matchedCode = potentialCode;
-                        matchedDesc = CODES[matchedCode];
+                        matchedDesc = ERROR_CODES[matchedCode];
                     }
                 }
 
-                // Check for target keywords
+                // Check for target error keywords
                 let foundKeyword = null;
                 TARGET_KEYWORDS.forEach(kw => {
                     if (sanitizedLine.includes(kw)) {
