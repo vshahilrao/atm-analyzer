@@ -127,10 +127,10 @@
             letter-spacing: 0.02em;
         }
 
-        /* KPI Dashboard */
+        /* KPI Dashboard - Updated to 2 columns */
         .kpi-container { 
             display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
+            grid-template-columns: repeat(2, 1fr); 
             gap: 16px; 
             margin-top: 20px;
             max-width: 1200px;
@@ -423,10 +423,6 @@
             <div id="kpiHits" class="kpi-num">0</div>
             <div class="kpi-lbl">Total Issue Hits</div>
         </div>
-        <div class="kpi-card">
-            <div id="kpiDates" class="kpi-num">0</div>
-            <div class="kpi-lbl">Affected Days</div>
-        </div>
     </div>
 
     <!-- Interactive Error Category Panel -->
@@ -533,7 +529,6 @@
 
         let aggregatedHits = [];
         let categoryTotals = {};
-        let datesFound = new Set();
         let html5QrCode = null;
 
         async function handleFileSelection(input) {
@@ -632,7 +627,6 @@
             document.getElementById('results').innerHTML = "";
             aggregatedHits = [];
             categoryTotals = {};
-            datesFound.clear();
         }
 
         function finishProcessing(totalFiles) {
@@ -704,7 +698,6 @@
                     }
 
                     categoryTotals[unifiedLabel] = (categoryTotals[unifiedLabel] || 0) + 1;
-                    datesFound.add(currentDate);
 
                     aggregatedHits.push({
                         file: filename,
@@ -719,7 +712,6 @@
         function renderDashboard(fileCount) {
             document.getElementById('kpiFiles').innerText = fileCount;
             document.getElementById('kpiHits').innerText = aggregatedHits.length;
-            document.getElementById('kpiDates').innerText = datesFound.size;
 
             document.getElementById('kpiSection').style.display = 'grid';
             document.getElementById('actionSummarySection').style.display = 'block';
