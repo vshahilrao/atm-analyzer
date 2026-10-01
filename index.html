@@ -469,9 +469,9 @@
     </div>
 
     <div class="btn-group">
-        <button onclick="document.getElementById('fileInput').click()"> Upload Logs / ZIP</button>
+        <button onclick="document.getElementById('fileInput').click()">📂 Upload Logs / ZIP</button>
         <button class="qr-btn" onclick="startQrScanner()">📷 Scan QR Code</button>
-        <button id="downloadBtn" class="excel-btn" onclick="exportToExcel()" disabled> Download Excel Report</button>
+        <button id="downloadBtn" class="excel-btn" onclick="exportToExcel()" disabled>📊 Download Excel Report</button>
     </div>
     <input type="file" id="fileInput" multiple accept=".txt,.log,.zip" onchange="handleFileSelection(this)">
 
@@ -495,7 +495,7 @@
 
     <!-- Interactive Error Category Panel -->
     <div id="actionSummarySection" class="action-panel" style="display:none;">
-        <div class="action-header"> Detected Error Categories</div>
+        <div class="action-header">⚡ Detected Error Categories</div>
         <div class="action-subtext">Click on any error box below to view its detailed action plan and resolution steps.</div>
         <div id="errorGrid" class="error-grid"></div>
     </div>
@@ -532,7 +532,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Day-by-Day Matrix Table -->
     <div id="dashboardSection" class="table-container" style="display:none;">
         <h3 style="font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; margin: 0 0 14px 0; color: var(--accent-yellow);">Day-by-Day Error & Issue Matrix</h3>
@@ -544,7 +544,6 @@
     <div id="results"></div>
 
     <script>
-    )
         // Official Error Code Descriptions
         const CODES = {
             "01": "DISPENSED SUCCESSFULLY",
@@ -565,61 +564,19 @@
             "16": "NO NOTE LIMIT EXCEEDED",
             "17": "NOTE THRESHOLD NOT SET",
             "18": "DRIFT ERROR",
-            "19": "CALIB PROFILE MATCH",
             "20": "CALIBRATION NOT DONE",
-            "21": "CALIB THRES SEL FAILED",
-            "22": "PROFILE ITER LIMIT EXCEEDED",
-            "23": "LESS SAMP ITR EXCEEDED",
             "24": "CASSETTE TYPE SENSOR FAILURE",
             "25": "FLASH ERROR",
-            "26": "COUNTING LEFT UPPER DRIFT",
-            "27": "COUNTING LEFT LOWER DRIFT",
-            "28": "COUNTING RIGHT UPPER DRIFT",
-            "29": "COUNTING RIGHT LOWER DRIFT",
-            "30": "REAR SKEW LEFT UPPER DRIFT", 
-            "31": "REAR SKEW LEFT LOWER DRIFT",
-            "32": "REAR SKEW RIGHT UPPER DRIFT", 
-            "33": "REAR SKEW RIGHT LOWER DRIFT",
-            "34": "PREV TRANS CASH IN TRAY", 
-            "35": "DISP INIT SUCCESS PREV CASH BP SUCCESS",
-            "36": "DISP INIT FAIL PREV CASH BP SUCCESS", 
-            "37": "DISP INIT FAIL PREV CASH BP FAIL",
-            "38": "PREV TRANS CASH TAKEN", 
-            "39": "CARTRIDGE HOMED",
             "40": "SAFE SHUTTER OPEN FAILS",
             "41": "SAFE SHUTTER CLOSE FAILS",
             "42": "CARTRIDGE POSITION ERROR",
             "43": "CAM POSITION ERROR",
             "44": "PURGE BIN NOT INSERTED",
             "45": "CASSETTE INSERTION PROBLEM",
-            "46": "TWIN SENSOR NOISE UPPER DRIFT", 
-            "47": "BILL MOVE TO PRESENTER FAIL",
-            "48": "PURGEBIN LID CONFIG MIS MATCH", 
-            "49": "RETRACT CLR BEFORE PRESENT BLK",
-            "50": "TOTAL NOTE COUNT OUTOF RANGE", 
-            "51": "NOTE WIDTH OUTOF RANGE",
-            "52": "CART IN SBL APP",
             "53": "CART COMM ERROR",
-            "54": "CASSETTE TYPE SENSOR FAILURE COMBINATION", 
-            "55": "INTER CASSETTE MOVE ERROR",
-            "56": "CALIB CASSETTE TYPE MISMATCH", 
-            "57": "CARTRIDGE FWF UPDATE SUCCESS",
-            "58": "CARTRIDGE DATA SENT FAIL", 
-            "59": "CARTRIDGE DATA RECEV FAIL",
-            "60": "CARTRIDGE INVALID DATA RECEIVED", 
-            "61": "CARTRIDGE DATA SENT SUCCESS",
-            "62": "CARTRIDGE CHECKSUM FAIL", 
-            "63": "MAX PEEP PURGE LIMIT EXCEED",
-            "64": "PURGE BIN LID OPEN FAIL", 
-            "65": "PURGE BIN LID CLOSE FAIL",
-            "66": "ACK RX FAIL FOR SHUTTER OPEN", 
-            "67": "COMMAND VERSION MISMATCH",
-            "68": "CCM VER UNSUPPORT MISMATCH",
-            "69": "FID A CARD REMOVE TIMEOUT",
             "73": "DOOR OPEN IDENTIFIED",
             "84": "I2C COMM ERROR",
             "85": "LED FAILURE",
-            "POWER CYCLE",
             "99": "UNKNOWN ERROR"
         };
 
@@ -628,7 +585,7 @@
             "SWITCH CONN FAILURE",
             "APP LEVEL ERROR",
             "ATR ERROR",
-            "E*2",
+            "FAILURE",
             "SUSPECT"
         ];
 
