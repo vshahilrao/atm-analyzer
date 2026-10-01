@@ -469,9 +469,9 @@
     </div>
 
     <div class="btn-group">
-        <button onclick="document.getElementById('fileInput').click()">📂 Upload Logs / ZIP</button>
+        <button onclick="document.getElementById('fileInput').click()"> Upload Logs / ZIP</button>
         <button class="qr-btn" onclick="startQrScanner()">📷 Scan QR Code</button>
-        <button id="downloadBtn" class="excel-btn" onclick="exportToExcel()" disabled>📊 Download Excel Report</button>
+        <button id="downloadBtn" class="excel-btn" onclick="exportToExcel()" disabled> Download Excel Report</button>
     </div>
     <input type="file" id="fileInput" multiple accept=".txt,.log,.zip" onchange="handleFileSelection(this)">
 
@@ -495,7 +495,7 @@
 
     <!-- Interactive Error Category Panel -->
     <div id="actionSummarySection" class="action-panel" style="display:none;">
-        <div class="action-header">⚡ Detected Error Categories</div>
+        <div class="action-header"> Detected Error Categories</div>
         <div class="action-subtext">Click on any error box below to view its detailed action plan and resolution steps.</div>
         <div id="errorGrid" class="error-grid"></div>
     </div>
