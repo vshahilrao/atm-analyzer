@@ -769,7 +769,7 @@
 
                     if (matchedCode) {
                         const codeName = CODES[matchedCode] || matchedDesc || "UNKNOWN ERROR";
-                        unifiedLabel = `DISPENSER FAILURE (02:NO NOTES DISPENSED) ${matchedCode} (${codeName})`;
+                        unifiedLabel = `CODE ${matchedCode} (${codeName})`;
                     } else {
                         unifiedLabel = foundKeyword;
                     }
