@@ -483,49 +483,21 @@
     </div>
 
     <script>
-        // Official Error Code Descriptions
-        const CODES = {
-            "01": "DISPENSED SUCCESSFULLY",
-            "02": "NO NOTES DISPENSED",
-            "03": "SENSOR FAILURE",
-            "04": "MAX TWIN LIMIT EXCEEDED",
-            "05": "PRESENTED SUCCESSFULLY",
-            "06": "PRESENTATION TRAY NOT HOMED",
-            "07": "BULK PURGE SUCCESSFUL",
-            "08": "MOTOR TIMEOUT NOT HOMED",
-            "09": "DISPENSER INITIALIZED",
-            "10": "DISPENSER NOT INITIALIZED",
-            "11": "CASH JAM",
-            "12": "NO CASH ON TRAY",
-            "13": "SUSPECT CASH PICKED UP",
-            "14": "CASH JAM NOT HOMED",
-            "15": "CASSETTE NOT ENABLED",
-            "16": "NOTE LIMIT EXCEEDED",
-            "17": "NOTE THRESHOLD NOT SET",
-            "18": "DRIFT ERROR",
-            "20": "CALIBRATION NOT DONE",
-            "24": "CASSETTE TYPE SENSOR FAILURE",
-            "25": "FLASH ERROR",
-            "40": "SAFE SHUTTER OPEN FAILS",
-            "41": "SAFE SHUTTER CLOSE FAILS",
-            "42": "CARTRIDGE POSITION ERROR",
-            "43": "CAM POSITION ERROR",
-            "44": "PURGE BIN NOT INSERTED",
-            "45": "CASSETTE INSERTION PROBLEM",
-            "53": "CART COMM ERROR",
-            "73": "DOOR OPEN IDENTIFIED",
-            "84": "I2C COMM ERROR",
-            "85": "LED FAILURE",
-            "99": "UNKNOWN ERROR"
-        };
-
-        // TARGET KEYWORDS INCLUDING SWITCH CONN FAILURE
-        const TARGET_KEYWORDS = [
-            "SWITCH CONN FAILURE",
-            "APP LEVEL ERROR",
-            "ATR ERROR",
-            "FAILURE",
-            "SUSPECT"
+        // STRICT ERROR & FAILURE PATTERNS ONLY (Normal response status codes excluded)
+        const ERROR_PATTERNS = [
+            { keyword: "SWITCH CONN FAILURE", label: "SWITCH CONN FAILURE" },
+            { keyword: "CASH JAM", label: "CASH JAM" },
+            { keyword: "APP LEVEL ERROR", label: "APP LEVEL ERROR" },
+            { keyword: "ATR ERROR", label: "ATR ERROR" },
+            { keyword: "SUSPECT CASH", label: "SUSPECT CASH PICKED UP" },
+            { keyword: "SUSPECT", label: "SUSPECT NOTE DETECTED" },
+            { keyword: "SENSOR FAILURE", label: "SENSOR FAILURE" },
+            { keyword: "MOTOR TIMEOUT", label: "MOTOR TIMEOUT NOT HOMED" },
+            { keyword: "SAFE SHUTTER", label: "SAFE SHUTTER ERROR" },
+            { keyword: "CARTRIDGE POSITION ERROR", label: "CARTRIDGE POSITION ERROR" },
+            { keyword: "CASSETTE INSERTION PROBLEM", label: "CASSETTE INSERTION PROBLEM" },
+            { keyword: "COMM ERROR", label: "COMMUNICATION ERROR" },
+            { keyword: "FAILURE", label: "GENERAL HARDWARE FAILURE" }
         ];
 
         // Centralized Master Action Guide
@@ -538,7 +510,7 @@
             "FAILURE": "Check general peripheral hardware connections, power supply state, and driver connectivity.",
             "SENSOR FAILURE": "Clean optical sensors, inspect harness wiring, and perform sensor test.",
             "MOTOR TIMEOUT": "Check motor gearing mechanism, mechanical blockage, and power board supply.",
-            "I2C COMM ERROR": "Re-seat internal communication ribbon cables, check motherboard controller connection."
+            "COMMUNICATION ERROR": "Re-seat internal communication ribbon cables, check motherboard controller connection."
         };
 
         let totalHitCount = 0;
@@ -603,9 +575,7 @@
                     stopQrScanner();
                     await fetchAndProcessQrZip(decodedText);
                 },
-                (errorMessage) => {
-                    // Ignore transient scanning errors
-                }
+                (errorMessage) => {}
             ).catch(err => {
                 alert("Unable to access camera: " + err);
                 stopQrScanner();
@@ -650,7 +620,7 @@
 
         function finishProcessing(totalFiles) {
             renderDashboard(totalFiles);
-            document.getElementById('status').innerText = `Completed processing ${totalFiles} file(s). Found ${totalHitCount} total hits.`;
+            document.getElementById('status').innerText = `Completed processing ${totalFiles} file(s). Found ${totalHitCount} total error hits.`;
             
             const downloadBtn = document.getElementById('downloadBtn');
             if (totalHitCount > 0) {
@@ -675,55 +645,29 @@
 
                 const lineUpper = rawLine.toUpperCase();
 
-                // Date detection
+                // Extract Date
                 const inlineDateMatch = rawLine.match(/(?:DATE\s*:\s*|DATE\s+)(\d{2}[\/\.-]\d{2}[\/\.-]\d{2,4})|\b(\d{4}[\/\.-]\d{2}[\/\.-]\d{2}|\d{2}[\/\.-]\d{2}[\/\.-]\d{4})\b/i);
                 if (inlineDateMatch) {
                     currentDate = inlineDateMatch[1] || inlineDateMatch[2];
                 }
 
-                // Strip timestamps to avoid matching hours/minutes as code numbers
-                let sanitizedLine = lineUpper.replace(/\b\d{2}:\d{2}:\d{2}(?::\d{2,3})?\b/g, '');
-
-                // Check for explicit error codes like (11:...) or [11] or CODE: 11
-                const explicitCodeMatch = sanitizedLine.match(/\((\d{2})\s*[:\-]\s*([^\)]+)\)/) || 
-                                           sanitizedLine.match(/CODE\s*[:\-]?\s*(\d{2})/i) ||
-                                           sanitizedLine.match(/\[(\d{2})\]/);
-
-                let matchedCode = null;
-                let matchedDesc = null;
-
-                if (explicitCodeMatch) {
-                    matchedCode = explicitCodeMatch[1];
-                    matchedDesc = explicitCodeMatch[2] ? explicitCodeMatch[2].trim() : CODES[matchedCode];
+                // Match STRICT failure keywords only (Response status codes like 01, 05, etc. are ignored)
+                let foundErrorLabel = null;
+                for (let i = 0; i < ERROR_PATTERNS.length; i++) {
+                    if (lineUpper.includes(ERROR_PATTERNS[i].keyword)) {
+                        foundErrorLabel = ERROR_PATTERNS[i].label;
+                        break;
+                    }
                 }
 
-                // Check for requested target keywords
-                let foundKeyword = null;
-                TARGET_KEYWORDS.forEach(kw => {
-                    if (sanitizedLine.includes(kw)) {
-                        foundKeyword = kw;
-                    }
-                });
-
-                if (matchedCode || foundKeyword) {
-                    let unifiedLabel = "";
-
-                    if (matchedCode) {
-                        const codeName = CODES[matchedCode] || matchedDesc || "UNKNOWN ERROR";
-                        unifiedLabel = `Code ${matchedCode} (${codeName})`;
-                    } else {
-                        unifiedLabel = foundKeyword;
-                    }
-
+                if (foundErrorLabel) {
                     uniqueDates.add(currentDate);
                     totalHitCount++;
 
-                    // Count overall totals per category
-                    categoryTotals[unifiedLabel] = (categoryTotals[unifiedLabel] || 0) + 1;
+                    categoryTotals[foundErrorLabel] = (categoryTotals[foundErrorLabel] || 0) + 1;
 
-                    // Populate Day Matrix
                     if (!dayMatrix[currentDate]) dayMatrix[currentDate] = {};
-                    dayMatrix[currentDate][unifiedLabel] = (dayMatrix[currentDate][unifiedLabel] || 0) + 1;
+                    dayMatrix[currentDate][foundErrorLabel] = (dayMatrix[currentDate][foundErrorLabel] || 0) + 1;
                 }
             });
         }
@@ -737,7 +681,6 @@
             document.getElementById('actionSummarySection').style.display = 'block';
             document.getElementById('matrixSection').style.display = 'block';
 
-            // Render Error Category Boxes
             let errorGridHtml = '';
             for (let label in categoryTotals) {
                 let count = categoryTotals[label];
@@ -750,7 +693,6 @@
             }
             document.getElementById('errorGrid').innerHTML = errorGridHtml;
 
-            // Render Matrix Table
             renderMatrixTable();
         }
 
@@ -815,7 +757,6 @@
 
             const wb = XLSX.utils.book_new();
 
-            // Export Matrix Sheet Only
             const sortedDates = Array.from(uniqueDates).sort();
             const categories = Object.keys(categoryTotals);
             const matrixRows = [];
