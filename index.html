@@ -63,4 +63,797 @@
             margin-top: 6px;
         }
         
-        .btn-group { display: flex; gap: 16px; margin-bottom: 20px; max-width: 120
+        .btn-group { display: flex; gap: 16px; margin-bottom: 20px; max-width: 1200px; margin-left: auto; margin-right: auto; }
+        
+        button { 
+            flex: 1; 
+            background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%); 
+            color: #ffffff; 
+            border: 1px solid rgba(255, 255, 255, 0.15); 
+            padding: 16px 20px; 
+            font-size: 14px; 
+            border-radius: 10px; 
+            font-weight: 700; 
+            letter-spacing: 0.02em;
+            cursor: pointer; 
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px -4px rgba(37, 99, 235, 0.6);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        button.qr-btn {
+            background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+            box-shadow: 0 8px 20px -4px rgba(168, 85, 247, 0.35);
+        }
+
+        button.qr-btn:hover:not(:disabled) {
+            box-shadow: 0 12px 25px -4px rgba(168, 85, 247, 0.55);
+        }
+
+        button.excel-btn { 
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%); 
+            box-shadow: 0 8px 20px -4px rgba(16, 185, 129, 0.35);
+        }
+
+        button.excel-btn:hover:not(:disabled) {
+            box-shadow: 0 12px 25px -4px rgba(16, 185, 129, 0.55);
+        }
+
+        button:disabled { 
+            opacity: 0.3; 
+            cursor: not-allowed; 
+            transform: none; 
+            box-shadow: none; 
+            border: 1px solid transparent;
+        }
+
+        input[type="file"] { display: none; }
+        
+        .status { 
+            margin: 12px 0 20px 0; 
+            font-size: 13px; 
+            font-weight: 600;
+            color: var(--accent-yellow); 
+            text-align: center; 
+            letter-spacing: 0.02em;
+        }
+
+        /* KPI Dashboard */
+        .kpi-container { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 16px; 
+            margin-top: 20px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .kpi-card { 
+            background: var(--card-bg); 
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 20px; 
+            border-radius: 12px; 
+            text-align: center; 
+            border: 1px solid var(--border-color); 
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-blue), transparent);
+            opacity: 0.5;
+        }
+
+        .kpi-card:hover { 
+            border-color: var(--border-glow); 
+            transform: translateY(-2px);
+        }
+
+        .kpi-num { 
+            font-size: 32px; 
+            font-weight: 800; 
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+        }
+
+        .kpi-lbl { 
+            font-size: 11px; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 0.08em; 
+            color: var(--text-sub); 
+            margin-top: 8px; 
+        }
+
+        /* Interactive Error Box Section */
+        .action-panel { 
+            margin-top: 24px; 
+            background: var(--card-bg); 
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 14px; 
+            padding: 22px; 
+            border: 1px solid var(--border-color); 
+            border-left: 5px solid var(--accent-blue); 
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .action-header { 
+            font-size: 15px; 
+            font-weight: 800; 
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            color: var(--accent-blue); 
+            margin-bottom: 6px; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+
+        .action-subtext {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-bottom: 16px;
+        }
+
+        .error-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
+            gap: 14px; 
+        }
+
+        .error-card { 
+            background: var(--card-inner); 
+            padding: 16px; 
+            border-radius: 10px; 
+            border: 1px solid var(--border-color); 
+            transition: all 0.25s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .error-card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px -5px rgba(56, 189, 248, 0.3);
+            background: rgba(13, 21, 39, 0.9);
+        }
+
+        .error-card-title { 
+            font-weight: 700; 
+            color: var(--text-main); 
+            font-size: 13px;
+            padding-right: 8px;
+        }
+
+        .badge { 
+            background: rgba(244, 63, 94, 0.15); 
+            color: #fb7185; 
+            border: 1px solid rgba(244, 63, 94, 0.35);
+            padding: 4px 10px; 
+            border-radius: 20px; 
+            font-size: 12px; 
+            font-weight: 800; 
+            letter-spacing: 0.03em;
+            box-shadow: 0 2px 8px rgba(244, 63, 94, 0.2);
+            white-space: nowrap;
+        }
+
+        /* Interactive Modal Popup */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(4, 7, 13, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal-content {
+            background: #0f172a;
+            border: 1px solid var(--accent-blue);
+            border-radius: 16px;
+            max-width: 500px;
+            width: 100%;
+            padding: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.2);
+            position: relative;
+            animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--accent-yellow);
+            line-height: 1.3;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-sub);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            box-shadow: none;
+            flex: initial;
+            width: auto;
+        }
+
+        .close-btn:hover {
+            color: var(--accent-red);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .modal-body {
+            background: var(--card-inner);
+            padding: 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            margin-top: 12px;
+        }
+
+        .action-label {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--accent-green);
+            margin-bottom: 6px;
+        }
+
+        .action-text {
+            font-size: 13.5px;
+            color: var(--text-main);
+            line-height: 1.5;
+        }
+
+        #qr-reader {
+            width: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .search-box { 
+            width: 100%; 
+            max-width: 1200px;
+            padding: 14px 18px; 
+            margin: 24px auto 0 auto; 
+            display: block;
+            box-sizing: border-box; 
+            background: var(--card-bg); 
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color); 
+            border-radius: 10px; 
+            color: white; 
+            font-size: 13.5px;
+            outline: none;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .search-box:focus { 
+            border-color: var(--accent-blue); 
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2); 
+        }
+
+        #results {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card { 
+            background: var(--card-bg); 
+            backdrop-filter: blur(12px);
+            padding: 16px 18px; 
+            margin-top: 14px; 
+            border-radius: 10px; 
+            border-left: 4px solid var(--accent-blue); 
+            border-top: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateX(2px);
+        }
+
+        .kw { color: #f43f5e; font-weight: 700; }
+        
+        .raw-line { 
+            font-size: 11.5px; 
+            color: #cbd5e1; 
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; 
+            background: var(--card-inner); 
+            padding: 10px 14px; 
+            border-radius: 8px; 
+            margin-top: 10px; 
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            word-break: break-all; 
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-header">
+        <h2>ATM Troubleshooting Dashboard</h2>
+        <div class="subtitle">Real-time log analysis & automated diagnostics summary</div>
+    </div>
+
+    <div class="btn-group">
+        <button onclick="document.getElementById('fileInput').click()">📂 Upload Logs / ZIP</button>
+        <button class="qr-btn" onclick="startQrScanner()">📷 Scan QR Code</button>
+        <button id="downloadBtn" class="excel-btn" onclick="exportToExcel()" disabled>📊 Download Excel Report</button>
+    </div>
+    <input type="file" id="fileInput" multiple accept=".txt,.log,.zip" onchange="handleFileSelection(this)">
+
+    <div id="status" class="status"></div>
+
+    <!-- Summary KPIs -->
+    <div id="kpiSection" class="kpi-container" style="display:none;">
+        <div class="kpi-card">
+            <div id="kpiFiles" class="kpi-num">0</div>
+            <div class="kpi-lbl">Files Processed</div>
+        </div>
+        <div class="kpi-card">
+            <div id="kpiHits" class="kpi-num">0</div>
+            <div class="kpi-lbl">Total Issue Hits</div>
+        </div>
+        <div class="kpi-card">
+            <div id="kpiDates" class="kpi-num">0</div>
+            <div class="kpi-lbl">Affected Days</div>
+        </div>
+    </div>
+
+    <!-- Interactive Error Category Panel -->
+    <div id="actionSummarySection" class="action-panel" style="display:none;">
+        <div class="action-header">⚡ Detected Error Categories</div>
+        <div class="action-subtext">Click on any error box below to view its detailed action plan and resolution steps.</div>
+        <div id="errorGrid" class="error-grid"></div>
+    </div>
+
+    <!-- Interactive Action Popup Modal -->
+    <div id="actionModal" class="modal-overlay" onclick="closeModal(event, 'actionModal')">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <div id="modalTitle" class="modal-title">Error Details</div>
+                    <div id="modalCount" style="font-size: 12px; color: var(--text-sub); margin-top: 4px;">0 Hits</div>
+                </div>
+                <button class="close-btn" onclick="hideModal('actionModal')">✖</button>
+            </div>
+            <div class="modal-body">
+                <div class="action-label">🛠️ Recommended Action Plan</div>
+                <div id="modalActionText" class="action-text"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Scanner Modal Overlay -->
+    <div id="qrModal" class="modal-overlay" onclick="closeModal(event, 'qrModal')">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">Scan QR Code for EJ Logs</div>
+                    <div style="font-size: 12px; color: var(--text-sub); margin-top: 4px;">Point camera at QR code containing EJ ZIP link</div>
+                </div>
+                <button class="close-btn" onclick="stopQrScanner()">✖</button>
+            </div>
+            <div class="modal-body">
+                <div id="qr-reader"></div>
+            </div>
+        </div>
+    </div>
+
+    <input type="text" id="searchFilter" class="search-box" placeholder="🔍 Search individual log records..." onkeyup="filterHits()" style="display:none;">
+
+    <div id="results"></div>
+
+    <script>
+        // Official Error Code Descriptions
+        const CODES = {
+            "01": "DISPENSED SUCCESSFULLY",
+            "02": "NO NOTES DISPENSED",
+            "03": "SENSOR FAILURE",
+            "04": "MAX TWIN LIMIT EXCEEDED",
+            "05": "PRESENTED SUCCESSFULLY",
+            "06": "PRESENTATION TRAY NOT HOMED",
+            "07": "BULK PURGE SUCCESSFUL",
+            "08": "MOTOR TIMEOUT NOT HOMED",
+            "09": "DISPENSER INITIALIZED",
+            "10": "DISPENSER NOT INITIALIZED",
+            "11": "CASH JAM",
+            "12": "NO CASH ON TRAY",
+            "13": "SUSPECT CASH PICKED UP",
+            "14": "CASH JAM NOT HOMED",
+            "15": "CASSETTE NOT ENABLED",
+            "16": "NOTE LIMIT EXCEEDED",
+            "17": "NOTE THRESHOLD NOT SET",
+            "18": "DRIFT ERROR",
+            "20": "CALIBRATION NOT DONE",
+            "24": "CASSETTE TYPE SENSOR FAILURE",
+            "25": "FLASH ERROR",
+            "40": "SAFE SHUTTER OPEN FAILS",
+            "41": "SAFE SHUTTER CLOSE FAILS",
+            "42": "CARTRIDGE POSITION ERROR",
+            "43": "CAM POSITION ERROR",
+            "44": "PURGE BIN NOT INSERTED",
+            "45": "CASSETTE INSERTION PROBLEM",
+            "53": "CART COMM ERROR",
+            "73": "DOOR OPEN IDENTIFIED",
+            "84": "I2C COMM ERROR",
+            "85": "LED FAILURE",
+            "99": "UNKNOWN ERROR"
+        };
+
+        // TARGET KEYWORDS INCLUDING SWITCH CONN FAILURE
+        const TARGET_KEYWORDS = [
+            "SWITCH CONN FAILURE",
+            "APP LEVEL ERROR",
+            "ATR ERROR",
+            "FAILURE",
+            "SUSPECT"
+        ];
+
+        // Centralized Master Action Guide
+        const ACTION_SOLUTIONS = {
+            "SWITCH CONN FAILURE": "Check network switch power, LAN cabling, switch port connectivity, and host gateway IP configuration.",
+            "CASH JAM": "Inspect transport belts, cash paths, sensors for torn notes, and clear physical jams.",
+            "APP LEVEL ERROR": "Restart Application services, verify ATM application configs, check system logs.",
+            "ATR ERROR": "Inspect Smart Card / Dip Reader module, clean contacts, test card driver interface.",
+            "SUSPECT": "Examine suspect notes bin, test sensor calibration, check note validation module.",
+            "FAILURE": "Check general peripheral hardware connections, power supply state, and driver connectivity.",
+            "SENSOR FAILURE": "Clean optical sensors, inspect harness wiring, and perform sensor test.",
+            "MOTOR TIMEOUT": "Check motor gearing mechanism, mechanical blockage, and power board supply.",
+            "I2C COMM ERROR": "Re-seat internal communication ribbon cables, check motherboard controller connection."
+        };
+
+        let aggregatedHits = [];
+        let categoryTotals = {};
+        let uniqueDates = new Set();
+        let html5QrCode = null;
+
+        async function handleFileSelection(input) {
+            const files = input.files;
+            if (!files.length) return;
+
+            resetState();
+            document.getElementById('status').innerText = "Analyzing log files...";
+
+            let totalFiles = 0;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (file.name.endsWith('.zip')) {
+                    totalFiles += await processZipFile(file);
+                } else {
+                    const text = await file.text();
+                    parseLogContent(file.name, text);
+                    totalFiles += 1;
+                }
+            }
+
+            finishProcessing(totalFiles);
+        }
+
+        async function processZipFile(zipFile) {
+            let processed = 0;
+            try {
+                const zip = new JSZip();
+                const unzipped = await zip.loadAsync(zipFile);
+                for (let filename in unzipped.files) {
+                    const zipEntry = unzipped.files[filename];
+                    if (!zipEntry.dir && (filename.endsWith('.log') || filename.endsWith('.txt') || !filename.includes('.'))) {
+                        const content = await zipEntry.async("string");
+                        parseLogContent(zipEntry.name, content);
+                        processed++;
+                    }
+                }
+            } catch (err) {
+                alert("Error unzipping file: " + err.message);
+            }
+            return processed;
+        }
+
+        /* QR Scanner Logic */
+        function startQrScanner() {
+            document.getElementById('qrModal').style.display = 'flex';
+            
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("qr-reader");
+            }
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                async (decodedText) => {
+                    stopQrScanner();
+                    await fetchAndProcessQrZip(decodedText);
+                },
+                (errorMessage) => {
+                    // Ignore transient scanning errors
+                }
+            ).catch(err => {
+                alert("Unable to access camera: " + err);
+                stopQrScanner();
+            });
+        }
+
+        function stopQrScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('qrModal').style.display = 'none';
+                }).catch(() => {
+                    document.getElementById('qrModal').style.display = 'none';
+                });
+            } else {
+                document.getElementById('qrModal').style.display = 'none';
+            }
+        }
+
+        async function fetchAndProcessQrZip(url) {
+            try {
+                document.getElementById('status').innerText = `Fetching EJ Logs from scanned QR link: ${url}...`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status} - Failed to fetch ZIP`);
+                
+                const blob = await response.blob();
+                resetState();
+
+                const totalFiles = await processZipFile(blob);
+                finishProcessing(totalFiles);
+            } catch (err) {
+                document.getElementById('status').innerText = "QR Fetch Failed. Ensure link is a valid CORS-enabled direct ZIP URL.";
+                alert("Failed to process QR Code URL: " + err.message);
+            }
+        }
+
+        function resetState() {
+            document.getElementById('results').innerHTML = "";
+            aggregatedHits = [];
+            categoryTotals = {};
+            uniqueDates.clear();
+        }
+
+        function finishProcessing(totalFiles) {
+            renderDashboard(totalFiles);
+            document.getElementById('status').innerText = `Completed processing ${totalFiles} file(s). Found ${aggregatedHits.length} total hits.`;
+            
+            const downloadBtn = document.getElementById('downloadBtn');
+            if (aggregatedHits.length > 0) {
+                downloadBtn.removeAttribute('disabled');
+            } else {
+                downloadBtn.setAttribute('disabled', 'true');
+            }
+        }
+
+        function parseLogContent(filename, text) {
+            const lines = text.split('\n');
+            let currentDate = "Unknown Date";
+
+            const filenameDateMatch = filename.match(/\b(\d{4}[_\-]\d{2}[_\-]\d{2}|\d{2}[_\-]\d{4})\b/);
+            if (filenameDateMatch) {
+                currentDate = filenameDateMatch[0].replace(/_/g, '-');
+            }
+
+            lines.forEach(line => {
+                const rawLine = line.trim();
+                if (!rawLine) return;
+
+                const lineUpper = rawLine.toUpperCase();
+
+                // Date detection
+                const inlineDateMatch = rawLine.match(/(?:DATE\s*:\s*|DATE\s+)(\d{2}[\/\.-]\d{2}[\/\.-]\d{2,4})|\b(\d{4}[\/\.-]\d{2}[\/\.-]\d{2}|\d{2}[\/\.-]\d{2}[\/\.-]\d{4})\b/i);
+                if (inlineDateMatch) {
+                    currentDate = inlineDateMatch[1] || inlineDateMatch[2];
+                }
+
+                // Strip timestamps to avoid matching hours/minutes as code numbers
+                let sanitizedLine = lineUpper.replace(/\b\d{2}:\d{2}:\d{2}(?::\d{2,3})?\b/g, '');
+
+                // Check for explicit error codes like (11:...) or [11] or CODE: 11
+                const explicitCodeMatch = sanitizedLine.match(/\((\d{2})\s*[:\-]\s*([^\)]+)\)/) || 
+                                           sanitizedLine.match(/CODE\s*[:\-]?\s*(\d{2})/i) ||
+                                           sanitizedLine.match(/\[(\d{2})\]/);
+
+                let matchedCode = null;
+                let matchedDesc = null;
+
+                if (explicitCodeMatch) {
+                    matchedCode = explicitCodeMatch[1];
+                    matchedDesc = explicitCodeMatch[2] ? explicitCodeMatch[2].trim() : CODES[matchedCode];
+                }
+
+                // Check for requested target keywords
+                let foundKeyword = null;
+                TARGET_KEYWORDS.forEach(kw => {
+                    if (sanitizedLine.includes(kw)) {
+                        foundKeyword = kw;
+                    }
+                });
+
+                if (matchedCode || foundKeyword) {
+                    let unifiedLabel = "";
+
+                    if (matchedCode) {
+                        const codeName = CODES[matchedCode] || matchedDesc || "UNKNOWN ERROR";
+                        unifiedLabel = `Code ${matchedCode} (${codeName})`;
+                    } else {
+                        unifiedLabel = foundKeyword;
+                    }
+
+                    uniqueDates.add(currentDate);
+
+                    // Count overall totals per category
+                    categoryTotals[unifiedLabel] = (categoryTotals[unifiedLabel] || 0) + 1;
+
+                    aggregatedHits.push({
+                        file: filename,
+                        date: currentDate,
+                        keyword: unifiedLabel,
+                        raw: rawLine
+                    });
+                }
+            });
+        }
+
+        function renderDashboard(fileCount) {
+            document.getElementById('kpiFiles').innerText = fileCount;
+            document.getElementById('kpiHits').innerText = aggregatedHits.length;
+            document.getElementById('kpiDates').innerText = uniqueDates.size;
+
+            document.getElementById('kpiSection').style.display = 'grid';
+            document.getElementById('actionSummarySection').style.display = 'block';
+            document.getElementById('searchFilter').style.display = 'block';
+
+            // Render Error Category Boxes (Clickable)
+            let errorGridHtml = '';
+            for (let label in categoryTotals) {
+                let count = categoryTotals[label];
+
+                errorGridHtml += `
+                    <div class="error-card" onclick="showActionModal('${encodeURIComponent(label)}')">
+                        <div class="error-card-title">${label}</div>
+                        <span class="badge">${count} Hits</span>
+                    </div>`;
+            }
+            document.getElementById('errorGrid').innerHTML = errorGridHtml;
+
+            renderHits(aggregatedHits);
+        }
+
+        function showActionModal(encodedLabel) {
+            const label = decodeURIComponent(encodedLabel);
+            const count = categoryTotals[label] || 0;
+            
+            let recommendation = "Perform diagnostic evaluation on module.";
+            for (let key in ACTION_SOLUTIONS) {
+                if (label.includes(key)) {
+                    recommendation = ACTION_SOLUTIONS[key];
+                    break;
+                }
+            }
+
+            document.getElementById('modalTitle').innerText = label;
+            document.getElementById('modalCount').innerText = `${count} Total Incident(s)`;
+            document.getElementById('modalActionText').innerText = recommendation;
+            document.getElementById('actionModal').style.display = 'flex';
+        }
+
+        function hideModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function closeModal(event, modalId) {
+            if (event.target.classList.contains('modal-overlay')) {
+                hideModal(modalId);
+            }
+        }
+
+        function renderHits(hits) {
+            const resultsDiv = document.getElementById('results');
+            let html = '';
+
+            hits.forEach((hit, index) => {
+                html += `
+                    <div class="card" data-index="${index}">
+                        <div style="font-size: 12px; color: var(--text-sub); display: flex; justify-content: space-between;">
+                            <span>📁 File: <b>${hit.file}</b></span>
+                            <span>📅 Date: <b>${hit.date}</b></span>
+                        </div>
+                        <div style="margin-top: 6px; font-size: 13.5px;">
+                            Category: <span class="kw">${hit.keyword}</span>
+                        </div>
+                        <div class="raw-line">${escapeHtml(hit.raw)}</div>
+                    </div>`;
+            });
+
+            resultsDiv.innerHTML = html;
+        }
+
+        function filterHits() {
+            const query = document.getElementById('searchFilter').value.toLowerCase();
+            const filtered = aggregatedHits.filter(hit => 
+                hit.file.toLowerCase().includes(query) ||
+                hit.date.toLowerCase().includes(query) ||
+                hit.keyword.toLowerCase().includes(query) ||
+                hit.raw.toLowerCase().includes(query)
+            );
+            renderHits(filtered);
+        }
+
+        function exportToExcel() {
+            if (!aggregatedHits.length) return;
+
+            const wb = XLSX.utils.book_new();
+
+            // Detailed Log Hits Export
+            const hitsData = aggregatedHits.map(h => ({
+                "File": h.file,
+                "Date": h.date,
+                "Category / Issue": h.keyword,
+                "Log Entry": h.raw
+            }));
+            const wsHits = XLSX.utils.json_to_sheet(hitsData);
+            XLSX.utils.book_append_sheet(wb, wsHits, "Detailed Hits");
+
+            XLSX.writeFile(wb, "ATM_Log_Analysis_Report.xlsx");
+        }
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
