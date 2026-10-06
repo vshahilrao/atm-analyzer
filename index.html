@@ -483,7 +483,7 @@
     </div>
 
     <script>
-        // STRICT ERROR & FAILURE PATTERNS ONLY (Normal response status codes excluded)
+        // STRICT ERROR & FAILURE PATTERNS ONLY
         const ERROR_PATTERNS = [
             { keyword: "SWITCH CONN FAILURE", label: "SWITCH CONN FAILURE" },
             { keyword: "CASH JAM", label: "CASH JAM" },
@@ -560,9 +560,8 @@
             return processed;
         }
 
-        /* Helper function to convert Google Drive sharing links to direct download link */
+        /* Helper to convert Google Drive share link into download URL */
         function formatGoogleDriveUrl(url) {
-            // Check for Google Drive file IDs in links like drive.google.com/file/d/FILE_ID/view or id=FILE_ID
             const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
             if (driveMatch && driveMatch[1]) {
                 return `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
@@ -604,32 +603,50 @@
             }
         }
 
+        /* Fetch handler with CORS proxy fallback */
         async function fetchAndProcessQrZip(url) {
-            try {
-                document.getElementById('status').innerText = `Scanned QR Code link: ${url}... Processing download...`;
-                
-                // Format URL if it's a Google Drive link
-                const downloadUrl = formatGoogleDriveUrl(url);
+            let targetUrl = formatGoogleDriveUrl(url.trim());
+            document.getElementById('status').innerText = `Scanned URL: ${url}. Downloading file...`;
 
-                const response = await fetch(downloadUrl);
-                if (!response.ok) throw new Error(`HTTP ${response.status} - Failed to fetch link`);
+            let response = null;
+
+            // Attempt 1: Direct Fetch
+            try {
+                response = await fetch(targetUrl);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            } catch (directErr) {
+                // Attempt 2: CORS Proxy Fallback
+                console.warn("Direct fetch blocked by CORS/security. Switching to proxy fallback...", directErr);
+                document.getElementById('status').innerText = "Direct fetch blocked by browser CORS policy. Retrying via CORS Proxy...";
                 
+                try {
+                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+                    response = await fetch(proxyUrl);
+                    if (!response.ok) throw new Error(`Proxy HTTP ${response.status}`);
+                } catch (proxyErr) {
+                    document.getElementById('status').innerText = "Failed to download log via QR link. Make sure Google Drive link is set to 'Anyone with the link can view'.";
+                    alert("Download Error: Link could not be fetched due to CORS permissions. " + proxyErr.message);
+                    return;
+                }
+            }
+
+            try {
                 const blob = await response.blob();
                 resetState();
 
-                // If content is text log file directly
-                if (blob.type.includes("text") || downloadUrl.endsWith(".log") || downloadUrl.endsWith(".txt")) {
+                // If downloaded blob is text or log directly
+                if (blob.type.includes("text") || targetUrl.endsWith(".log") || targetUrl.endsWith(".txt")) {
                     const text = await blob.text();
                     parseLogContent("QR_Downloaded_Log.log", text);
                     finishProcessing(1);
                 } else {
-                    // Treat as ZIP file
+                    // Try parsing as ZIP archive
                     const totalFiles = await processZipFile(blob);
                     finishProcessing(totalFiles);
                 }
             } catch (err) {
-                document.getElementById('status').innerText = "QR Fetch Failed. Ensure Google Drive link has 'Anyone with link can view' access enabled or link is CORS-accessible.";
-                alert("Failed to process QR Code URL: " + err.message);
+                document.getElementById('status').innerText = "Error parsing downloaded content.";
+                alert("Failed to process downloaded file: " + err.message);
             }
         }
 
@@ -673,7 +690,7 @@
                     currentDate = inlineDateMatch[1] || inlineDateMatch[2];
                 }
 
-                // Match STRICT failure keywords only (Response status codes like 01, 05, etc. are ignored)
+                // Match STRICT failure keywords only
                 let foundErrorLabel = null;
                 for (let i = 0; i < ERROR_PATTERNS.length; i++) {
                     if (lineUpper.includes(ERROR_PATTERNS[i].keyword)) {
