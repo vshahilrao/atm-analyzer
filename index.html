@@ -220,7 +220,7 @@
 
         .error-grid { 
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
             gap: 14px; 
         }
 
@@ -249,6 +249,7 @@
             color: var(--text-main); 
             font-size: 13px;
             padding-right: 8px;
+            word-break: break-word;
         }
 
         .badge { 
@@ -307,7 +308,7 @@
             background: rgba(56, 189, 248, 0.05);
         }
 
-        /* Interactive Modal Popup */
+        /* Interactive Action Popup Modal */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -437,7 +438,7 @@
 
     <!-- Interactive Error Category Panel -->
     <div id="actionSummarySection" class="action-panel" style="display:none;">
-        <div class="action-header">⚡ Detected Error Categories</div>
+        <div class="action-header">⚡ Detected Error Keywords & Categories</div>
         <div class="action-subtext">Click on any error box below to view its detailed action plan and resolution steps.</div>
         <div id="errorGrid" class="error-grid"></div>
     </div>
@@ -519,13 +520,15 @@
             "99": "UNKNOWN ERROR"
         };
 
-        // TARGET KEYWORDS INCLUDING SWITCH CONN FAILURE AND INLINE CODE KEYWORDS
+        // TARGET KEYWORDS INCLUDING SPECIFIC CODES AND EMBEDDED PHRASES
         const TARGET_KEYWORDS = [
             "Command Reject",
             "SWITCH CONN FAILURE",
             "APP LEVEL ERROR",
             "ATR ERROR",
             "DISPENSER FAILURE (11:NO NOTES DISPENSED)",
+            "DISPENSER FAILURE(11:CASH JAM)",
+            "DISPENSER FAILURE",
             "PIN ENCRYPTION FAILURE",
             "E*2",
             "Power Cycle",
@@ -536,10 +539,11 @@
         const ACTION_SOLUTIONS = {
             "SWITCH CONN FAILURE": "Check network switch power, LAN cabling, switch port connectivity, and host gateway IP configuration.",
             "CASH JAM": "Inspect transport belts, cash paths, sensors for torn notes, and clear physical jams.",
+            "NO NOTES DISPENSED": "Verify dispenser cash levels, check note pick module and solenoid sensors.",
             "APP LEVEL ERROR": "Restart Application services, verify ATM application configs, check system logs.",
             "ATR ERROR": "Inspect Smart Card / Dip Reader module, clean contacts, test card driver interface.",
             "SUSPECT": "Examine suspect notes bin, test sensor calibration, check note validation module.",
-            "FAILURE": "Check general peripheral hardware connections, power supply state, and driver connectivity.",
+            "DISPENSER FAILURE": "Check dispenser motor mechanism, ribbon cables, cassette positioning, and power supply.",
             "SENSOR FAILURE": "Clean optical sensors, inspect harness wiring, and perform sensor test.",
             "MOTOR TIMEOUT": "Check motor gearing mechanism, mechanical blockage, and power board supply.",
             "I2C COMM ERROR": "Re-seat internal communication ribbon cables, check motherboard controller connection."
@@ -607,9 +611,7 @@
                     stopQrScanner();
                     await fetchAndProcessQrZip(decodedText);
                 },
-                (errorMessage) => {
-                    // Ignore transient scanning errors
-                }
+                (errorMessage) => {}
             ).catch(err => {
                 alert("Unable to access camera: " + err);
                 stopQrScanner();
@@ -685,58 +687,48 @@
                     currentDate = inlineDateMatch[1] || inlineDateMatch[2];
                 }
 
-                // Strip timestamps to avoid matching hours/minutes as code numbers
+                // Clean out time markers HH:MM:SS to avoid misidentifying time values
                 let sanitizedLine = lineUpper.replace(/\b\d{2}:\d{2}:\d{2}(?::\d{2,3})?\b/g, '');
 
-                // Check for explicit error codes like (11:...) or [11] or CODE: 11
-                const explicitCodeMatch = sanitizedLine.match(/\((\d{2})\s*[:\-]\s*([^\)]+)\)/) || 
-                                           sanitizedLine.match(/CODE\s*[:\-]?\s*(\d{2})/i) ||
-                                           sanitizedLine.match(/\[(\d{2})\]/);
+                let matchedCategory = null;
 
-                let matchedCode = null;
-                let matchedDesc = null;
-
-                if (explicitCodeMatch) {
-                    matchedCode = explicitCodeMatch[1];
-                    matchedDesc = explicitCodeMatch[2] ? explicitCodeMatch[2].trim() : CODES[matchedCode];
+                // Step 1: Check Target Keywords First (Preserves exact Keyword Strings)
+                for (let kw of TARGET_KEYWORDS) {
+                    // Match keyword regardless of spacing differences around punctuation
+                    const kwPattern = kw.toUpperCase().replace(/\(/g, '\\s*\\(\\s*').replace(/\)/g, '\\s*\\)\\s*').replace(/:/g, '\\s*:\\s*');
+                    if (new RegExp(kwPattern, 'i').test(rawLine)) {
+                        matchedCategory = kw;
+                        break;
+                    }
                 }
 
-                // Check for requested target keywords
-                let foundKeyword = null;
-                TARGET_KEYWORDS.forEach(kw => {
-                    if (sanitizedLine.includes(kw.toUpperCase())) {
-                        foundKeyword = kw;
+                // Step 2: If no keyword matched, check for explicit stand-alone error codes (e.g. Code 11, [11], (11: ...))
+                if (!matchedCategory) {
+                    const explicitCodeMatch = sanitizedLine.match(/\((\d{2})\s*[:\-]/) || 
+                                               sanitizedLine.match(/CODE\s*[:\-]?\s*\b(\d{2})\b/i) ||
+                                               sanitizedLine.match(/\[(\d{2})\]/);
+
+                    if (explicitCodeMatch) {
+                        const codeNum = explicitCodeMatch[1];
+                        if (CODES[codeNum]) {
+                            matchedCategory = `Code ${codeNum} (${CODES[codeNum]})`;
+                        }
                     }
-                });
+                }
 
-                if (matchedCode || foundKeyword) {
-                    let unifiedLabel = "";
-
-                    // If a keyword contains embedded code patterns like (11:NO NOTES DISPENSED), extract and prioritize the code context
-                    if (foundKeyword && foundKeyword.match(/\((\d{2})[\:\-]/)) {
-                        const kwCodeMatch = foundKeyword.match(/\((\d{2})[\:\-]/)[1];
-                        const codeName = CODES[kwCodeMatch] || "UNKNOWN ERROR";
-                        unifiedLabel = `Code ${kwCodeMatch} (${codeName})`;
-                    } else if (matchedCode) {
-                        const codeName = CODES[matchedCode] || matchedDesc || "UNKNOWN ERROR";
-                        unifiedLabel = `Code ${matchedCode} (${codeName})`;
-                    } else {
-                        unifiedLabel = foundKeyword;
-                    }
-
+                // Record Hit if a category/keyword was captured
+                if (matchedCategory) {
                     uniqueDates.add(currentDate);
 
-                    // Count overall totals per category
-                    categoryTotals[unifiedLabel] = (categoryTotals[unifiedLabel] || 0) + 1;
+                    categoryTotals[matchedCategory] = (categoryTotals[matchedCategory] || 0) + 1;
 
-                    // Populate Day Matrix
                     if (!dayMatrix[currentDate]) dayMatrix[currentDate] = {};
-                    dayMatrix[currentDate][unifiedLabel] = (dayMatrix[currentDate][unifiedLabel] || 0) + 1;
+                    dayMatrix[currentDate][matchedCategory] = (dayMatrix[currentDate][matchedCategory] || 0) + 1;
 
                     aggregatedHits.push({
                         file: filename,
                         date: currentDate,
-                        keyword: unifiedLabel,
+                        keyword: matchedCategory,
                         raw: rawLine
                     });
                 }
