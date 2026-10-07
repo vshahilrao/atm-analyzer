@@ -520,19 +520,19 @@
             "99": "UNKNOWN ERROR"
         };
 
-        // TARGET KEYWORDS INCLUDING SPECIFIC CODES AND EMBEDDED PHRASES
+        // TARGET KEYWORDS USING EXACT REGEX MATCHERS
         const TARGET_KEYWORDS = [
-            "Command Reject",
-            "SWITCH CONN FAILURE",
-            "APP LEVEL ERROR",
-            "ATR ERROR",
-            "DISPENSER FAILURE (11:NO NOTES DISPENSED)",
-            "DISPENSER FAILURE(11:CASH JAM)",
-            "DISPENSER FAILURE",
-            "PIN ENCRYPTION FAILURE",
-            "E*2",
-            "Power Cycle",
-            "SUSPECT"
+            { name: "Command Reject", regex: /\bCommand\s+Reject\b/i },
+            { name: "SWITCH CONN FAILURE", regex: /\bSWITCH\s+CONN\s+FAILURE\b/i },
+            { name: "APP LEVEL ERROR", regex: /\bAPP\s+LEVEL\s+ERROR\b/i },
+            { name: "ATR ERROR", regex: /\bATR\s+ERROR\b/i },
+            { name: "DISPENSER FAILURE (11:NO NOTES DISPENSED)", regex: /DISPENSER\s+FAILURE\s*\(\s*11\s*:\s*NO\s+NOTES\s+DISPENSED\s*\)/i },
+            { name: "DISPENSER FAILURE(11:CASH JAM)", regex: /DISPENSER\s+FAILURE\s*\(\s*11\s*:\s*CASH\s+JAM\s*\)/i },
+            { name: "DISPENSER FAILURE", regex: /\bDISPENSER\s+FAILURE\b/i },
+            { name: "PIN ENCRYPTION FAILURE", regex: /\bPIN\s+ENCRYPTION\s+FAILURE\b/i },
+            { name: "E*2", regex: /(?:^|[\s,;:[\]()])E\*2(?:[\s,;:[\]()]|$)/i },
+            { name: "Power Cycle", regex: /\bPower\s+Cycle\b/i },
+            { name: "SUSPECT", regex: /\bSUSPECT\b/i }
         ];
 
         // Centralized Master Action Guide
@@ -546,7 +546,8 @@
             "DISPENSER FAILURE": "Check dispenser motor mechanism, ribbon cables, cassette positioning, and power supply.",
             "SENSOR FAILURE": "Clean optical sensors, inspect harness wiring, and perform sensor test.",
             "MOTOR TIMEOUT": "Check motor gearing mechanism, mechanical blockage, and power board supply.",
-            "I2C COMM ERROR": "Re-seat internal communication ribbon cables, check motherboard controller connection."
+            "I2C COMM ERROR": "Re-seat internal communication ribbon cables, check motherboard controller connection.",
+            "E*2": "Investigate printer/encryptor communication state and check device error code logs."
         };
 
         let aggregatedHits = [];
@@ -692,12 +693,10 @@
 
                 let matchedCategory = null;
 
-                // Step 1: Check Target Keywords First (Preserves exact Keyword Strings)
+                // Step 1: Check Target Keywords using Exact Regex
                 for (let kw of TARGET_KEYWORDS) {
-                    // Match keyword regardless of spacing differences around punctuation
-                    const kwPattern = kw.toUpperCase().replace(/\(/g, '\\s*\\(\\s*').replace(/\)/g, '\\s*\\)\\s*').replace(/:/g, '\\s*:\\s*');
-                    if (new RegExp(kwPattern, 'i').test(rawLine)) {
-                        matchedCategory = kw;
+                    if (kw.regex.test(rawLine)) {
+                        matchedCategory = kw.name;
                         break;
                     }
                 }
