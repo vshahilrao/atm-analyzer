@@ -495,7 +495,7 @@
             "08": "MOTOR TIMEOUT NOT HOMED",
             "09": "DISPENSER INITIALIZED",
             "10": "DISPENSER NOT INITIALIZED",
-            "11": "CASH JAM",
+            "11": "CASH JAM / NO NOTES DISPENSED",
             "12": "NO CASH ON TRAY",
             "13": "SUSPECT CASH PICKED UP",
             "14": "CASH JAM NOT HOMED",
@@ -519,12 +519,16 @@
             "99": "UNKNOWN ERROR"
         };
 
-        // TARGET KEYWORDS INCLUDING SWITCH CONN FAILURE
+        // TARGET KEYWORDS INCLUDING SWITCH CONN FAILURE AND INLINE CODE KEYWORDS
         const TARGET_KEYWORDS = [
+            "Command Reject",
             "SWITCH CONN FAILURE",
             "APP LEVEL ERROR",
             "ATR ERROR",
-            "FAILURE",
+            "DISPENSER FAILURE (11:NO NOTES DISPENSED)",
+            "PIN ENCRYPTION FAILURE",
+            "E*2",
+            "Power Cycle",
             "SUSPECT"
         ];
 
@@ -700,7 +704,7 @@
                 // Check for requested target keywords
                 let foundKeyword = null;
                 TARGET_KEYWORDS.forEach(kw => {
-                    if (sanitizedLine.includes(kw)) {
+                    if (sanitizedLine.includes(kw.toUpperCase())) {
                         foundKeyword = kw;
                     }
                 });
@@ -708,7 +712,12 @@
                 if (matchedCode || foundKeyword) {
                     let unifiedLabel = "";
 
-                    if (matchedCode) {
+                    // If a keyword contains embedded code patterns like (11:NO NOTES DISPENSED), extract and prioritize the code context
+                    if (foundKeyword && foundKeyword.match(/\((\d{2})[\:\-]/)) {
+                        const kwCodeMatch = foundKeyword.match(/\((\d{2})[\:\-]/)[1];
+                        const codeName = CODES[kwCodeMatch] || "UNKNOWN ERROR";
+                        unifiedLabel = `Code ${kwCodeMatch} (${codeName})`;
+                    } else if (matchedCode) {
                         const codeName = CODES[matchedCode] || matchedDesc || "UNKNOWN ERROR";
                         unifiedLabel = `Code ${matchedCode} (${codeName})`;
                     } else {
