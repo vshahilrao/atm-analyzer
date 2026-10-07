@@ -413,7 +413,7 @@
     <div class="btn-group">
         <button onclick="document.getElementById('fileInput').click()">📂 Upload Logs / ZIP</button>
         <button class="qr-btn" onclick="startQrScanner()">📷 Scan QR Code</button>
-        <button id="downloadBtn" class="excel-btn" onclick="exportToExcel()" disabled>📊 Download Excel Report</button>
+        <button id="downloadBtn" class="excel-btn" onclick="exportToExcel()" disabled>📊 Download Excel Matrix Report</button>
     </div>
     <input type="file" id="fileInput" multiple accept=".txt,.log,.zip" onchange="handleFileSelection(this)">
 
@@ -472,7 +472,7 @@
             <div class="modal-header">
                 <div>
                     <div class="modal-title">Scan QR Code for EJ Logs</div>
-                    <div style="font-size: 12px; color: var(--text-sub); margin-top: 4px;">Point camera at QR code containing EJ ZIP link</div>
+                    <div style="font-size: 12px; color: var(--text-sub); margin-top: 4px;">Point camera at QR code with direct ZIP or Google Drive link</div>
                 </div>
                 <button class="close-btn" onclick="stopQrScanner()">✖</button>
             </div>
@@ -483,53 +483,21 @@
     </div>
 
     <script>
-        // Official Error Code Descriptions
-        const CODES = {
-            "01": "DISPENSED SUCCESSFULLY",
-            "02": "NO NOTES DISPENSED",
-            "03": "SENSOR FAILURE",
-            "04": "MAX TWIN LIMIT EXCEEDED",
-            "05": "PRESENTED SUCCESSFULLY",
-            "06": "PRESENTATION TRAY NOT HOMED",
-            "07": "BULK PURGE SUCCESSFUL",
-            "08": "MOTOR TIMEOUT NOT HOMED",
-            "09": "DISPENSER INITIALIZED",
-            "10": "DISPENSER NOT INITIALIZED",
-            "11": "CASH JAM / NO NOTES DISPENSED",
-            "12": "NO CASH ON TRAY",
-            "13": "SUSPECT CASH PICKED UP",
-            "14": "CASH JAM NOT HOMED",
-            "15": "CASSETTE NOT ENABLED",
-            "16": "NOTE LIMIT EXCEEDED",
-            "17": "NOTE THRESHOLD NOT SET",
-            "18": "DRIFT ERROR",
-            "20": "CALIBRATION NOT DONE",
-            "24": "CASSETTE TYPE SENSOR FAILURE",
-            "25": "FLASH ERROR",
-            "40": "SAFE SHUTTER OPEN FAILS",
-            "41": "SAFE SHUTTER CLOSE FAILS",
-            "42": "CARTRIDGE POSITION ERROR",
-            "43": "CAM POSITION ERROR",
-            "44": "PURGE BIN NOT INSERTED",
-            "45": "CASSETTE INSERTION PROBLEM",
-            "53": "CART COMM ERROR",
-            "73": "DOOR OPEN IDENTIFIED",
-            "84": "I2C COMM ERROR",
-            "85": "LED FAILURE",
-            "99": "UNKNOWN ERROR"
-        };
-
-        // TARGET KEYWORDS INCLUDING SWITCH CONN FAILURE AND INLINE CODE KEYWORDS
-        const TARGET_KEYWORDS = [
-            "Command Reject",
-            "SWITCH CONN FAILURE",
-            "APP LEVEL ERROR",
-            "ATR ERROR",
-            "DISPENSER FAILURE (11:NO NOTES DISPENSED)",
-            "PIN ENCRYPTION FAILURE",
-            "E*2",
-            "Power Cycle",
-            "SUSPECT"
+        // STRICT ERROR & FAILURE PATTERNS ONLY
+        const ERROR_PATTERNS = [
+            { keyword: "SWITCH CONN FAILURE", label: "SWITCH CONN FAILURE" },
+            { keyword: "CASH JAM", label: "CASH JAM" },
+            { keyword: "APP LEVEL ERROR", label: "APP LEVEL ERROR" },
+            { keyword: "ATR ERROR", label: "ATR ERROR" },
+            { keyword: "SUSPECT CASH", label: "SUSPECT CASH PICKED UP" },
+            { keyword: "SUSPECT", label: "SUSPECT NOTE DETECTED" },
+            { keyword: "SENSOR FAILURE", label: "SENSOR FAILURE" },
+            { keyword: "MOTOR TIMEOUT", label: "MOTOR TIMEOUT NOT HOMED" },
+            { keyword: "SAFE SHUTTER", label: "SAFE SHUTTER ERROR" },
+            { keyword: "CARTRIDGE POSITION ERROR", label: "CARTRIDGE POSITION ERROR" },
+            { keyword: "CASSETTE INSERTION PROBLEM", label: "CASSETTE INSERTION PROBLEM" },
+            { keyword: "COMM ERROR", label: "COMMUNICATION ERROR" },
+            { keyword: "FAILURE", label: "GENERAL HARDWARE FAILURE" }
         ];
 
         // Centralized Master Action Guide
@@ -542,10 +510,10 @@
             "FAILURE": "Check general peripheral hardware connections, power supply state, and driver connectivity.",
             "SENSOR FAILURE": "Clean optical sensors, inspect harness wiring, and perform sensor test.",
             "MOTOR TIMEOUT": "Check motor gearing mechanism, mechanical blockage, and power board supply.",
-            "I2C COMM ERROR": "Re-seat internal communication ribbon cables, check motherboard controller connection."
+            "COMMUNICATION ERROR": "Re-seat internal communication ribbon cables, check motherboard controller connection."
         };
 
-        let aggregatedHits = [];
+        let totalHitCount = 0;
         let categoryTotals = {};
         let dayMatrix = {};
         let uniqueDates = new Set();
@@ -592,6 +560,15 @@
             return processed;
         }
 
+        /* Helper to convert Google Drive share link into download URL */
+        function formatGoogleDriveUrl(url) {
+            const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+            if (driveMatch && driveMatch[1]) {
+                return `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+            }
+            return url;
+        }
+
         /* QR Scanner Logic */
         function startQrScanner() {
             document.getElementById('qrModal').style.display = 'flex';
@@ -607,9 +584,7 @@
                     stopQrScanner();
                     await fetchAndProcessQrZip(decodedText);
                 },
-                (errorMessage) => {
-                    // Ignore transient scanning errors
-                }
+                (errorMessage) => {}
             ).catch(err => {
                 alert("Unable to access camera: " + err);
                 stopQrScanner();
@@ -628,25 +603,55 @@
             }
         }
 
+        /* Fetch handler with CORS proxy fallback */
         async function fetchAndProcessQrZip(url) {
+            let targetUrl = formatGoogleDriveUrl(url.trim());
+            document.getElementById('status').innerText = `Scanned URL: ${url}. Downloading file...`;
+
+            let response = null;
+
+            // Attempt 1: Direct Fetch
             try {
-                document.getElementById('status').innerText = `Fetching EJ Logs from scanned QR link: ${url}...`;
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`HTTP ${response.status} - Failed to fetch ZIP`);
+                response = await fetch(targetUrl);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            } catch (directErr) {
+                // Attempt 2: CORS Proxy Fallback
+                console.warn("Direct fetch blocked by CORS/security. Switching to proxy fallback...", directErr);
+                document.getElementById('status').innerText = "Direct fetch blocked by browser CORS policy. Retrying via CORS Proxy...";
                 
+                try {
+                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+                    response = await fetch(proxyUrl);
+                    if (!response.ok) throw new Error(`Proxy HTTP ${response.status}`);
+                } catch (proxyErr) {
+                    document.getElementById('status').innerText = "Failed to download log via QR link. Make sure Google Drive link is set to 'Anyone with the link can view'.";
+                    alert("Download Error: Link could not be fetched due to CORS permissions. " + proxyErr.message);
+                    return;
+                }
+            }
+
+            try {
                 const blob = await response.blob();
                 resetState();
 
-                const totalFiles = await processZipFile(blob);
-                finishProcessing(totalFiles);
+                // If downloaded blob is text or log directly
+                if (blob.type.includes("text") || targetUrl.endsWith(".log") || targetUrl.endsWith(".txt")) {
+                    const text = await blob.text();
+                    parseLogContent("QR_Downloaded_Log.log", text);
+                    finishProcessing(1);
+                } else {
+                    // Try parsing as ZIP archive
+                    const totalFiles = await processZipFile(blob);
+                    finishProcessing(totalFiles);
+                }
             } catch (err) {
-                document.getElementById('status').innerText = "QR Fetch Failed. Ensure link is a valid CORS-enabled direct ZIP URL.";
-                alert("Failed to process QR Code URL: " + err.message);
+                document.getElementById('status').innerText = "Error parsing downloaded content.";
+                alert("Failed to process downloaded file: " + err.message);
             }
         }
 
         function resetState() {
-            aggregatedHits = [];
+            totalHitCount = 0;
             categoryTotals = {};
             dayMatrix = {};
             uniqueDates.clear();
@@ -654,10 +659,10 @@
 
         function finishProcessing(totalFiles) {
             renderDashboard(totalFiles);
-            document.getElementById('status').innerText = `Completed processing ${totalFiles} file(s). Found ${aggregatedHits.length} total hits.`;
+            document.getElementById('status').innerText = `Completed processing ${totalFiles} file(s). Found ${totalHitCount} total error hits.`;
             
             const downloadBtn = document.getElementById('downloadBtn');
-            if (aggregatedHits.length > 0) {
+            if (totalHitCount > 0) {
                 downloadBtn.removeAttribute('disabled');
             } else {
                 downloadBtn.setAttribute('disabled', 'true');
@@ -679,80 +684,42 @@
 
                 const lineUpper = rawLine.toUpperCase();
 
-                // Date detection
+                // Extract Date
                 const inlineDateMatch = rawLine.match(/(?:DATE\s*:\s*|DATE\s+)(\d{2}[\/\.-]\d{2}[\/\.-]\d{2,4})|\b(\d{4}[\/\.-]\d{2}[\/\.-]\d{2}|\d{2}[\/\.-]\d{2}[\/\.-]\d{4})\b/i);
                 if (inlineDateMatch) {
                     currentDate = inlineDateMatch[1] || inlineDateMatch[2];
                 }
 
-                // Strip timestamps to avoid matching hours/minutes as code numbers
-                let sanitizedLine = lineUpper.replace(/\b\d{2}:\d{2}:\d{2}(?::\d{2,3})?\b/g, '');
-
-                // Check for explicit error codes like (11:...) or [11] or CODE: 11
-                const explicitCodeMatch = sanitizedLine.match(/\((\d{2})\s*[:\-]\s*([^\)]+)\)/) || 
-                                           sanitizedLine.match(/CODE\s*[:\-]?\s*(\d{2})/i) ||
-                                           sanitizedLine.match(/\[(\d{2})\]/);
-
-                let matchedCode = null;
-                let matchedDesc = null;
-
-                if (explicitCodeMatch) {
-                    matchedCode = explicitCodeMatch[1];
-                    matchedDesc = explicitCodeMatch[2] ? explicitCodeMatch[2].trim() : CODES[matchedCode];
+                // Match STRICT failure keywords only
+                let foundErrorLabel = null;
+                for (let i = 0; i < ERROR_PATTERNS.length; i++) {
+                    if (lineUpper.includes(ERROR_PATTERNS[i].keyword)) {
+                        foundErrorLabel = ERROR_PATTERNS[i].label;
+                        break;
+                    }
                 }
 
-                // Check for requested target keywords
-                let foundKeyword = null;
-                TARGET_KEYWORDS.forEach(kw => {
-                    if (sanitizedLine.includes(kw.toUpperCase())) {
-                        foundKeyword = kw;
-                    }
-                });
-
-                if (matchedCode || foundKeyword) {
-                    let unifiedLabel = "";
-
-                    // If a keyword contains embedded code patterns like (11:NO NOTES DISPENSED), extract and prioritize the code context
-                    if (foundKeyword && foundKeyword.match(/\((\d{2})[\:\-]/)) {
-                        const kwCodeMatch = foundKeyword.match(/\((\d{2})[\:\-]/)[1];
-                        const codeName = CODES[kwCodeMatch] || "UNKNOWN ERROR";
-                        unifiedLabel = `Code ${kwCodeMatch} (${codeName})`;
-                    } else if (matchedCode) {
-                        const codeName = CODES[matchedCode] || matchedDesc || "UNKNOWN ERROR";
-                        unifiedLabel = `Code ${matchedCode} (${codeName})`;
-                    } else {
-                        unifiedLabel = foundKeyword;
-                    }
-
+                if (foundErrorLabel) {
                     uniqueDates.add(currentDate);
+                    totalHitCount++;
 
-                    // Count overall totals per category
-                    categoryTotals[unifiedLabel] = (categoryTotals[unifiedLabel] || 0) + 1;
+                    categoryTotals[foundErrorLabel] = (categoryTotals[foundErrorLabel] || 0) + 1;
 
-                    // Populate Day Matrix
                     if (!dayMatrix[currentDate]) dayMatrix[currentDate] = {};
-                    dayMatrix[currentDate][unifiedLabel] = (dayMatrix[currentDate][unifiedLabel] || 0) + 1;
-
-                    aggregatedHits.push({
-                        file: filename,
-                        date: currentDate,
-                        keyword: unifiedLabel,
-                        raw: rawLine
-                    });
+                    dayMatrix[currentDate][foundErrorLabel] = (dayMatrix[currentDate][foundErrorLabel] || 0) + 1;
                 }
             });
         }
 
         function renderDashboard(fileCount) {
             document.getElementById('kpiFiles').innerText = fileCount;
-            document.getElementById('kpiHits').innerText = aggregatedHits.length;
+            document.getElementById('kpiHits').innerText = totalHitCount;
             document.getElementById('kpiDates').innerText = uniqueDates.size;
 
             document.getElementById('kpiSection').style.display = 'grid';
             document.getElementById('actionSummarySection').style.display = 'block';
             document.getElementById('matrixSection').style.display = 'block';
 
-            // Render Error Category Boxes
             let errorGridHtml = '';
             for (let label in categoryTotals) {
                 let count = categoryTotals[label];
@@ -765,7 +732,6 @@
             }
             document.getElementById('errorGrid').innerHTML = errorGridHtml;
 
-            // Render Matrix Table
             renderMatrixTable();
         }
 
@@ -826,11 +792,10 @@
         }
 
         function exportToExcel() {
-            if (!aggregatedHits.length) return;
+            if (totalHitCount === 0) return;
 
             const wb = XLSX.utils.book_new();
 
-            // 1. Matrix Sheet
             const sortedDates = Array.from(uniqueDates).sort();
             const categories = Object.keys(categoryTotals);
             const matrixRows = [];
@@ -850,17 +815,7 @@
             const wsMatrix = XLSX.utils.json_to_sheet(matrixRows);
             XLSX.utils.book_append_sheet(wb, wsMatrix, "Day-by-Day Matrix");
 
-            // 2. Detailed Log Hits Export
-            const hitsData = aggregatedHits.map(h => ({
-                "File": h.file,
-                "Date": h.date,
-                "Category / Issue": h.keyword,
-                "Log Entry": h.raw
-            }));
-            const wsHits = XLSX.utils.json_to_sheet(hitsData);
-            XLSX.utils.book_append_sheet(wb, wsHits, "Detailed Hits");
-
-            XLSX.writeFile(wb, "ATM_Log_Analysis_Report.xlsx");
+            XLSX.writeFile(wb, "ATM_Log_Matrix_Report.xlsx");
         }
     </script>
 </body>
