@@ -412,9 +412,9 @@
     </div>
 
     <div class="btn-group">
-        <button onclick="document.getElementById('fileInput').click()"> Upload Logs / ZIP</button>
+        <button onclick="document.getElementById('fileInput').click()">📂 Upload Logs / ZIP</button>
         <button class="qr-btn" onclick="startQrScanner()">📷 Scan QR Code</button>
-        <button id="downloadBtn" class="excel-btn" onclick="exportToExcel()" disabled> Download Excel Report</button>
+        <button id="downloadBtn" class="excel-btn" onclick="exportToExcel()" disabled>📊 Download Excel Report</button>
     </div>
     <input type="file" id="fileInput" multiple accept=".txt,.log,.zip" onchange="handleFileSelection(this)">
 
@@ -438,14 +438,14 @@
 
     <!-- Interactive Error Category Panel -->
     <div id="actionSummarySection" class="action-panel" style="display:none;">
-        <div class="action-header"> Detected Error Keywords & Categories</div>
+        <div class="action-header">⚡ Detected Error Keywords & Categories</div>
         <div class="action-subtext">Click on any error box below to view its detailed action plan and resolution steps.</div>
         <div id="errorGrid" class="error-grid"></div>
     </div>
 
     <!-- Day-by-Day Error Matrix Section -->
     <div id="matrixSection" class="matrix-container" style="display:none;">
-        <div class="action-header"> Day-by-Day Error & Issue Matrix</div>
+        <div class="action-header">📅 Day-by-Day Error & Issue Matrix</div>
         <div class="action-subtext">Breakdown of error occurrence frequencies across individual days.</div>
         <div id="matrixTableWrapper"></div>
     </div>
@@ -520,25 +520,19 @@
             "99": "UNKNOWN ERROR"
         };
 
-        // Specific high-priority error phrases checked FIRST
-        const PRIORITY_KEYWORDS = [
-            { name: "DISPENSER FAILURE (11:NO NOTES DISPENSED)", regex: /DISPENSER\s+FAILURE\s*\(\s*11\s*:\s*NO\s+NOTES\s+DISPENSED\s*\)/i },
-            { name: "DISPENSER FAILURE(11:CASH JAM)", regex: /DISPENSER\s+FAILURE\s*\(\s*11\s*:\s*CASH\s+JAM\s*\)/i },
+        // TARGET KEYWORDS USING EXACT REGEX MATCHERS
+        const TARGET_KEYWORDS = [
             { name: "Command Reject", regex: /\bCommand\s+Reject\b/i },
             { name: "SWITCH CONN FAILURE", regex: /\bSWITCH\s+CONN\s+FAILURE\b/i },
             { name: "APP LEVEL ERROR", regex: /\bAPP\s+LEVEL\s+ERROR\b/i },
             { name: "ATR ERROR", regex: /\bATR\s+ERROR\b/i },
+            { name: "DISPENSER FAILURE (11:NO NOTES DISPENSED)", regex: /DISPENSER\s+FAILURE\s*\(\s*11\s*:\s*NO\s+NOTES\s+DISPENSED\s*\)/i },
+            { name: "DISPENSER FAILURE(11:CASH JAM)", regex: /DISPENSER\s+FAILURE\s*\(\s*11\s*:\s*CASH\s+JAM\s*\)/i },
+            { name: "DISPENSER FAILURE", regex: /\bDISPENSER\s+FAILURE\b/i },
             { name: "PIN ENCRYPTION FAILURE", regex: /\bPIN\s+ENCRYPTION\s+FAILURE\b/i },
             { name: "E*2", regex: /(?:^|[\s,;:[\]()])E\*2(?:[\s,;:[\]()]|$)/i },
             { name: "Power Cycle", regex: /\bPower\s+Cycle\b/i },
             { name: "SUSPECT", regex: /\bSUSPECT\b/i }
-        ];
-
-        // Broad fallback keywords checked LAST
-        const FALLBACK_KEYWORDS = [
-            { name: "DISPENSER FAILURE", regex: /\bDISPENSER\s+FAILURE\b/i },
-            { name: "COMMUNICATION ERROR", regex: /\bCOMM(?:UNICATION)?\s+ERR(?:OR)?\b/i },
-            { name: "HARDWARE FAILURE", regex: /\bHW\s+FAILURE|HARDWARE\s+FAILURE\b/i }
         ];
 
         // Centralized Master Action Guide
@@ -694,50 +688,34 @@
                     currentDate = inlineDateMatch[1] || inlineDateMatch[2];
                 }
 
-                // Strip time stamps (HH:MM:SS) so time digits don't get misread as code numbers
+                // Clean out time markers HH:MM:SS to avoid misidentifying time values
                 let sanitizedLine = lineUpper.replace(/\b\d{2}:\d{2}:\d{2}(?::\d{2,3})?\b/g, '');
 
                 let matchedCategory = null;
 
-                // Step 1: Check Specific Priority Keywords First
-                for (let kw of PRIORITY_KEYWORDS) {
+                // Step 1: Check Target Keywords using Exact Regex
+                for (let kw of TARGET_KEYWORDS) {
                     if (kw.regex.test(rawLine)) {
                         matchedCategory = kw.name;
                         break;
                     }
                 }
 
-                // Step 2: Check standard numeric error codes (e.g. Code 11, [03], ERROR: 08, RESPONSE CODE 116)
+                // Step 2: If no keyword matched, check for explicit stand-alone error codes (e.g. Code 11, [11], (11: ...))
                 if (!matchedCategory) {
-                    const codeMatch = sanitizedLine.match(/(?:CODE|ERR|ERROR|STATUS|RESPONSE)\s*[:\-]?\s*\b(\d{2,3})\b/) || 
-                                      sanitizedLine.match(/[\(\[](\d{2,3})[\)\]]/);
+                    const explicitCodeMatch = sanitizedLine.match(/\((\d{2})\s*[:\-]/) || 
+                                               sanitizedLine.match(/CODE\s*[:\-]?\s*\b(\d{2})\b/i) ||
+                                               sanitizedLine.match(/\[(\d{2})\]/);
 
-                    if (codeMatch) {
-                        const codeNum = codeMatch[1].padStart(2, '0');
+                    if (explicitCodeMatch) {
+                        const codeNum = explicitCodeMatch[1];
                         if (CODES[codeNum]) {
                             matchedCategory = `Code ${codeNum} (${CODES[codeNum]})`;
-                        } else {
-                            matchedCategory = `Code ${codeNum}`;
                         }
                     }
                 }
 
-                // Step 3: Check Broad Fallback Keywords (e.g. generic DISPENSER FAILURE)
-                if (!matchedCategory) {
-                    for (let kw of FALLBACK_KEYWORDS) {
-                        if (kw.regex.test(rawLine)) {
-                            matchedCategory = kw.name;
-                            break;
-                        }
-                    }
-                }
-
-                // Step 4: Generic Catch-All for explicitly logged ERR/FAILURE lines not caught above
-                if (!matchedCategory && /\b(FAIL|FAILURE|ERROR|FATAL)\b/i.test(rawLine)) {
-                    matchedCategory = "OTHER LOG ERRORS";
-                }
-
-                // Record Hit
+                // Record Hit if a category/keyword was captured
                 if (matchedCategory) {
                     uniqueDates.add(currentDate);
 
