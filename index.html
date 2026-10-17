@@ -44,11 +44,11 @@
       background: #94a3b8;
     }
 
-    /* Soft Glow Shadows */
+    /* Soft Glow Aesthetic Cards */
     .aesthetic-card {
-      background: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(226, 232, 240, 0.8);
+      border: 1px solid rgba(226, 232, 240, 0.9);
       box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
     }
   </style>
@@ -64,7 +64,7 @@
         </div>
         <div>
           <h1 class="font-bold text-lg leading-tight tracking-tight text-white">ATM Log Diagnostics</h1>
-          <p class="text-xs text-slate-400">Failure Analysis & Action Intelligence Dashboard</p>
+          <p class="text-xs text-slate-400">Dispenser & Keyword Failure Intelligence Engine</p>
         </div>
       </div>
 
@@ -75,7 +75,7 @@
         </button>
         <button onclick="triggerDemoData()" class="bounce-tap bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium px-3 py-2 rounded-lg transition-all border border-slate-700 flex items-center space-x-1.5">
           <i data-lucide="play-circle" class="w-4 h-4"></i>
-          <span>Load Sample Logs</span>
+          <span>Load Demo Logs</span>
         </button>
       </div>
     </div>
@@ -92,21 +92,22 @@
           <i data-lucide="upload-cloud" class="w-8 h-8"></i>
         </div>
         <h3 class="text-base font-semibold text-slate-800">Drop ATM Log Files or ZIP Archives here</h3>
-        <p class="text-xs text-slate-500 mt-1">Supports standard TXT/LOG files and compressed ZIP bundles containing multiple logs</p>
+        <p class="text-xs text-slate-500 mt-1">Extracts errors like "02:NO NOTES DISPENSED", "DISPENSER FAILURE", & System Keywords</p>
         <div class="mt-4 flex items-center space-x-2 text-xs text-slate-400">
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-            Auto-Detects 99 Error Codes
+            01-99 Dispenser Code Engine
           </span>
           <span>•</span>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-            Keyword Failures
+            8 Monitored Keywords
           </span>
           <span>•</span>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-            Dispenser Categories
+            ZIP & Raw Logs
           </span>
         </div>
       </div>
+
       <!-- Processing Progress Indicator -->
       <div id="processingStatus" class="hidden mt-4 pt-4 border-t border-slate-200 text-center">
         <div class="flex items-center justify-center space-x-2 text-sm text-indigo-600 font-medium">
@@ -120,7 +121,7 @@
     <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
         <div>
-          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Processed Events</p>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Evaluated Events</p>
           <h4 id="statTotalEvents" class="text-2xl font-bold text-slate-800 mt-1">0</h4>
         </div>
         <div class="p-3 bg-blue-50 text-blue-600 rounded-xl bounce-tap">
@@ -130,7 +131,7 @@
 
       <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
         <div>
-          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Hardware Code Errors</p>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Dispenser Error Codes</p>
           <h4 id="statCodeErrors" class="text-2xl font-bold text-indigo-600 mt-1">0</h4>
         </div>
         <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl bounce-tap">
@@ -140,7 +141,7 @@
 
       <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
         <div>
-          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Keyword Failures</p>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Monitored Keywords</p>
           <h4 id="statKeywordErrors" class="text-2xl font-bold text-rose-600 mt-1">0</h4>
         </div>
         <div class="p-3 bg-rose-50 text-rose-600 rounded-xl bounce-tap">
@@ -150,7 +151,7 @@
 
       <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
         <div>
-          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Dispenser Category Hits</p>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Dispenser Failure Hits</p>
           <h4 id="statDispenserErrors" class="text-2xl font-bold text-amber-600 mt-1">0</h4>
         </div>
         <div class="p-3 bg-amber-50 text-amber-600 rounded-xl bounce-tap">
@@ -168,11 +169,11 @@
           <div>
             <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
               <i data-lucide="trending-up" class="w-5 h-5 text-indigo-600"></i>
-              Most Frequent Failures & Error Codes (Sorted Highest to Lowest)
+              Dispenser Error Code Counts (Sorted Highest to Lowest Hits)
             </h2>
-            <p class="text-xs text-slate-500">Click any card box to view failure details & recommended technical action points.</p>
+            <p class="text-xs text-slate-500">Click any card box to inspect root causes and recommended technical action points.</p>
           </div>
-          <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full" id="errorTypeCount">0 Active Errors</span>
+          <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full" id="errorTypeCount">0 Active Codes</span>
         </div>
 
         <!-- ERROR BOXES GRID -->
@@ -198,20 +199,18 @@
               Monitored Keyword Failures
             </h3>
             <div id="keywordList" class="space-y-2">
-              <!-- Dynamically Populated -->
               <div class="text-xs text-slate-400 italic">No failures detected</div>
             </div>
           </div>
 
-          <!-- DISPENSER CATEGORY BOX -->
+          <!-- DISPENSER FAILURE CATEGORY BOX -->
           <div class="aesthetic-card rounded-2xl p-5">
             <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
               <i data-lucide="box" class="w-4 h-4 text-amber-500"></i>
-              Dispenser Category Breakdown
+              Dispenser Failure Lines
             </h3>
             <div id="dispenserCategoryList" class="space-y-2">
-              <!-- Dynamically Populated -->
-              <div class="text-xs text-slate-400 italic">No dispenser category events detected</div>
+              <div class="text-xs text-slate-400 italic">No dispenser lines detected</div>
             </div>
           </div>
 
@@ -246,15 +245,15 @@
             <thead class="bg-slate-100 text-slate-700 text-xs uppercase font-semibold">
               <tr>
                 <th class="px-4 py-3 rounded-l-lg">Date</th>
-                <th class="px-4 py-3">Hardware Code Errors</th>
+                <th class="px-4 py-3">Dispenser Code Errors</th>
                 <th class="px-4 py-3">Keyword Failures</th>
-                <th class="px-4 py-3">Dispenser Errors</th>
+                <th class="px-4 py-3">Dispenser Category Lines</th>
                 <th class="px-4 py-3 text-right rounded-r-lg">Total Daily Hits</th>
               </tr>
             </thead>
             <tbody id="dailyTableBody" class="divide-y divide-slate-100">
               <tr>
-                <td colspan="5" class="text-center py-6 text-xs text-slate-400">Upload log files to see day-by-day distribution.</td>
+                <td colspan="5" class="text-center py-6 text-xs text-slate-400">Upload log files to view day-by-day distribution.</td>
               </tr>
             </tbody>
           </table>
@@ -292,7 +291,7 @@
         <div>
           <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>
-            Recommended Action Points
+            Recommended Technical Action Points
           </h4>
           <ul id="modalActionsList" class="space-y-2 text-xs text-slate-600">
             <!-- Dynamic Actions -->
@@ -318,101 +317,112 @@
   <!-- APPLICATION JAVASCRIPT LOGIC -->
   <script>
     // -------------------------------------------------------------
-    // 1. MASTER ERROR CODES & ACTION POINTS MAPPING
+    // 1. MASTER DISPENSER ERROR CODE MAP (01 THROUGH 99)
     // -------------------------------------------------------------
-    const ERROR_MAP = {
-      1: { name: "DISPENSED SUCCESSFULLY", category: "Success", action: "Normal Operation. No technical intervention required." },
-      2: { name: "MOTOR TIMEOUT", category: "Hardware", action: "Check dispenser motor power connection. Inspect motor belts/gears for physical jam or wear." },
-      3: { name: "SENSOR FAILURE", category: "Hardware", action: "Clean sensor lenses with isopropyl alcohol. Inspect ribbon cables for continuity." },
-      4: { name: "MAX TWIN LIMIT EXCEEDED", category: "Cash Operations", action: "Calibrate double-note/twin sensor. Inspect note thickness parameter and note fitness quality." },
-      5: { name: "PRESENTED SUCCESSFULLY", category: "Success", action: "Normal Operation. Cash successfully picked by customer." },
-      6: { name: "PRESENTATION TRAY NOT HOMED", category: "Mechanical", action: "Inspect presentation tray home sensor. Verify mechanism isn't blocked by debris or crumpled notes." },
-      7: { name: "BULK PURGE SUCCESSFULL", category: "Success", action: "Normal Operation. Cash purged into purge bin." },
-      8: { name: "MOTOR TIMEOUT NOT HOMED", category: "Hardware", action: "Check motor position home sensor. Check gear timing and motor driver board." },
-      9: { name: "DISPENSER INITIALIZED", category: "Info", action: "Normal Operation. Dispenser state ready." },
-      10: { name: "DISPENSER NOT INITIALIZED", category: "Configuration", action: "Trigger re-initialization command from ATM terminal application. Verify firmware state." },
-      11: { name: "CASH JAM", category: "Critical Cash Jam", action: "Clear note transport path manually. Inspect transport belts and divert shafts." },
-      12: { name: "NO CASH ON TRAY", category: "Cash Operations", action: "Check if notes failed to transport from cassette to presenter. Verify pick module belts." },
-      13: { name: "SUSPECT CASH PICKEDUP", category: "Cash Operations", action: "Inspect suspect note bin. Verify optical sensors for thickness/width validation calibration." },
-      14: { name: "CASH JAM NOT HOMED", category: "Critical Cash Jam", action: "Clear physical jam in presenter/transport path and reset clamp home position sensor." },
-      15: { name: "CASSETTE NOT ENABLED", category: "Configuration", action: "Check cassette configuration status in supervisor menu. Enable cassette channel." },
-      16: { name: "NO NOTE LIMIT EXCEEDED", category: "Cash Operations", action: "Replenish currency notes in cassette. Reset bill count in ATM supervisor software." },
-      17: { name: "NOTE THRESHOLD NOT SET", category: "Configuration", action: "Perform currency calibration routine in supervisor mode to record note thickness profiles." },
-      18: { name: "DRIFT ERROR", category: "Sensors", action: "Recalibrate optical double-detect sensors. Dust/clean optics." },
-      19: { name: "CALIB PROFILE MATCH", category: "Info", action: "Normal Operation. Calibration profile matches currency specifications." },
-      20: { name: "CALIBRATION NOT DONE", category: "Configuration", action: "Run mandatory cassette currency calibration routine before restoring service." },
-      21: { name: "CALIB THRES SEL FAILED", category: "Configuration", action: "Re-run calibration using fresh, uncreased reference banknotes." },
-      22: { name: "PROFILE ITER LIMIT EXCEEDED", category: "Sensors", action: "Clean optical sensors. Check for ambient light leakage or optical obstruction." },
-      23: { name: "LESS SAMP ITR EXCEEDED", category: "Sensors", action: "Retry calibration with at least 20 sample banknotes in cassette." },
-      24: { name: "CASSETTE TYPE SENSOR FAILURE PULLUP PULLDOWN", category: "Hardware", action: "Check cassette microswitches/reed switches on backplane board." },
-      25: { name: "FLASH ERROR", category: "Firmware", action: "Re-flash dispenser control board firmware. Replace EEPROM if corrupt." },
-      26: { name: "COUNTING LEFT UPPER DRIFT", category: "Sensors", action: "Clean upper left optical count sensor emitter and detector." },
-      27: { name: "COUNTING LEFT LOWER DRIFT", category: "Sensors", action: "Clean lower left optical count sensor." },
-      28: { name: "COUNTING RIGHT UPPER DRIFT", category: "Sensors", action: "Clean upper right optical count sensor." },
-      29: { name: "COUNTING RIGHT LOWER DRIFT", category: "Sensors", action: "Clean lower right optical count sensor." },
-      30: { name: "REAR SKEW LEFT UPPER DRIFT", category: "Sensors", action: "Clean rear skew upper left sensor array." },
-      31: { name: "REAR SKEW LEFT LOWER DRIFT", category: "Sensors", action: "Clean rear skew lower left sensor array." },
-      32: { name: "REAR SKEW RIGHT UPPER DRIFT", category: "Sensors", action: "Clean rear skew upper right sensor array." },
-      33: { name: "REAR SKEW RIGHT LOWER DRIFT", category: "Sensors", action: "Clean rear skew lower right sensor array." },
-      34: { name: "PREV TRANS CASH IN TRAY", category: "Cash Operations", action: "Check if customer left cash or if tray sensor is dirty/blocked." },
-      35: { name: "DISP INIT SUCCESS PREV CASH BP SUCCESS", category: "Info", action: "Purged forgotten cash to bulk bin during boot. Ready for use." },
-      36: { name: "DISP INIT FAIL PREV CASH BP SUCCESS", category: "Hardware", action: "Dispenser initialization failed after purging previous cash. Re-initialize." },
-      37: { name: "DISP INIT FAIL PREV CASH BP FAIL", category: "Critical Cash Jam", action: "Physical blockage in presenter. Inspect bulk purge path and clear jammed bills." },
-      38: { name: "PREV TRANS CASH TAKEN", category: "Info", action: "Normal Operation. Cash taken by user." },
-      39: { name: "CARTRIDGE HOMED", category: "Info", action: "Normal Operation." },
-      40: { name: "SAFE SHUTTER OPEN FAILS", category: "Hardware", action: "Inspect shutter motor drive solenoid and physical shutter guide rails." },
-      41: { name: "SAFE SHUTTER CLOSE FAILS", category: "Hardware", action: "Check for obstruction in exit shutter area or optical safety light curtain." },
-      42: { name: "CARTRIDGE POSITION ERROR", category: "Hardware", action: "Verify cassette seating and lock latch mechanism in dispenser bay." },
-      43: { name: "CAM POSITION ERROR", category: "Mechanical", action: "Inspect mechanical cam home position sensor and gear alignment." },
-      44: { name: "PURGE BIN NOT INSERTED", category: "Hardware", action: "Ensure purge/reject container is fully inserted and microswitch engaged." },
-      45: { name: "CASSETTE INSERTION PROBLEM", category: "Hardware", action: "Re-seat cassette properly. Check guide tracks for damage." },
-      46: { name: "TWIN SENSOR NOISE UPPER DRIFT", category: "Sensors", action: "Inspect twin/double detector circuitry for electrical noise/interference." },
-      47: { name: "BILL MOVE TO PRESENTER FAIL", category: "Transport", action: "Inspect feed rollers and divert solenoid for slipping or note jams." },
-      48: { name: "PURGEBIN LID CONFIG MIS MATCH", category: "Configuration", action: "Check dip switches or supervisor configuration for purge bin lock sensor." },
-      49: { name: "RETRACT CLR BEFORE PRESENT BLK", category: "Transport", action: "Perform retract clearance cycle before executing presentation." },
-      50: { name: "TOTAL NOTE COUNT OUTOF RANGE", category: "Configuration", action: "Verify max note dispense bundle limit in host parameters (usually max 40 notes)." },
-      51: { name: "NOTE WIDTH OUTOF RANGE", category: "Sensors", action: "Check note size guide guides in cassette. Verify note dimension parameters." },
-      52: { name: "CART IN SBL APP", category: "Info", action: "Cartridge in single bill loading application state." },
-      53: { name: "CART COMM ERROR", category: "Communication", action: "Check internal RS232/USB/I2C harness connection to cassette controller." },
-      54: { name: "CASSETTE TYPE SENSOR FAILURE COMBINATION", category: "Hardware", action: "Replace/check cassette size detection microswitch assembly." },
-      55: { name: "INTER CASSETTE MOVE ERROR", category: "Transport", action: "Inspect vertical note transport path between upper and lower cassettes." },
-      56: { name: "CALIB CASSETTE TYPE MISMATCH", category: "Configuration", action: "Ensure cassette denomination matches configured profile." },
-      57: { name: "CARTRIDGE FWF UPDATE SUCCESS", category: "Info", action: "Firmware update applied." },
-      58: { name: "CARTRIDGE DATA SENT FAIL", category: "Communication", action: "Retry data sync with cartridge chip." },
-      59: { name: "CARTRIDGE DATA RECEV FAIL", category: "Communication", action: "Inspect contact pins on cassette connector." },
-      60: { name: "CARTRIDGE INVALID DATA RECEIVED", category: "Communication", action: "Re-seat cassette or reset cartridge memory." },
-      61: { name: "CARTRIDGE DATA SENT SUCCESS", category: "Info", action: "Communication success." },
-      62: { name: "CARTRIDGE CHECKSUM FAIL", category: "Firmware", action: "Re-write cassette memory parameters." },
-      63: { name: "MAX PEEP PURGE LIMIT EXCEED", category: "Cash Operations", action: "Purge bin reached maximum capacity limit. Empty reject bin and reset counter." },
-      64: { name: "PURGE BIN LID OPEN FAIL", category: "Hardware", action: "Check purge bin lid lock actuator." },
-      65: { name: "PURGE BIN LID CLOSE FAIL", category: "Hardware", action: "Inspect lid spring and latch sensor." },
-      66: { name: "ACK RX FAIL FOR SHUTTER OPEN", category: "Communication", action: "Check shutter board communications harness." },
-      67: { name: "COMMAND VERSION MISMATCH", category: "Firmware", action: "Update dispenser firmware or terminal software driver to matching version." },
-      68: { name: "CCM VER UNSUPPORT MISMATCH", category: "Firmware", action: "Incompatible board controller firmware detected. Update firmware." },
-      69: { name: "FID A CARD REMOVE TIMEOUT", category: "Card Reader", action: "Check card reader bezel and power supply." },
-      70: { name: "NOT IN SESSION", category: "System State", action: "Restart terminal session software." },
-      71: { name: "PAIRING REQUEST EXHAUSTED", category: "Communication", action: "Re-pair security board with dispenser logic controller." },
-      72: { name: "SESSION DETAILS MISMATCH", category: "System State", action: "Clear local cache and restart ATM host communication driver." },
-      73: { name: "DOOR OPEN IDENTIFIED", category: "Security", action: "Verify safe/cabinet door interlock switch." },
-      74: { name: "NO CASH ON TRAY - PRESENT BLOCK BEFORE CASH PRESENT", category: "Transport", action: "Check pick module belt mechanism. Verify notes reached presenter prior to presentation." },
-      75: { name: "NO CASH ON TRAY - RETRACT CLEAR BEFORE CASH PRESENT", category: "Transport", action: "Inspect note retract path for early dropped bills." },
-      76: { name: "CAM FIND HOME TO", category: "Mechanical Timeout", action: "Check CAM motor assembly for binding or failure to find home sensor." },
-      77: { name: "CAM DISPENSE TO CLAMP TO", category: "Mechanical Timeout", action: "Inspect clamp transport timing and cam drive gears." },
-      78: { name: "CAM CLAMP TO PRESENT TO", category: "Mechanical Timeout", action: "Check presenter drive belt and clamp shaft mechanism." },
-      79: { name: "CAM PRESENT TO BP TO", category: "Mechanical Timeout", action: "Check transport path from presenter to bulk purge container." },
-      80: { name: "CAM DISPENSE TO PURGE TO", category: "Mechanical Timeout", action: "Inspect purge divert shaft and cam actuation." },
-      81: { name: "CAM BP TO DISPENSE TO", category: "Mechanical Timeout", action: "Check return stroke mechanism on CAM system." },
-      82: { name: "CART FIND HOME TO", category: "Mechanical Timeout", action: "Check cartridge home positioning sensor and motor." },
-      83: { name: "CART C2P TO (cassette to present)", category: "Mechanical Timeout", action: "Notes taking too long from cassette to presenter. Check rollers for wear/slipping." },
-      84: { name: "I2C COMM ERROR (DLDR)", category: "Hardware/Communication", action: "Replace or re-seat internal I2C bus ribbon cable on logic board." },
-      85: { name: "LED FAILURE (DLDR)", category: "Hardware", action: "Check or replace indicator light board / optical LED set." },
-      86: { name: "CART P2BP TO (Present to Bulk purge)", category: "Mechanical Timeout", action: "Inspect presenter to bulk purge chute for paper jams or mechanical friction." },
-      97: { name: "REQ NOT REACHED TO CDM", category: "Communication", action: "Check CDM board serial/USB connection to main ATM PC unit." },
-      99: { name: "UNKNOWN ERROR", category: "System Unhandled", action: "Gather full trace logs and consult hardware manufacturer engineering support." }
+    const MASTER_ERROR_MAP = {
+      1: { name: "DISPENSED SUCCESSFULLY", category: "Success", action: "Normal operation. No action required." },
+      2: { name: "MOTOR TIMEOUT", category: "Hardware", action: "Check dispenser motor power supply and cable connectors. Inspect drive gears and belts for jams." },
+      3: { name: "SENSOR FAILURE", category: "Hardware", action: "Clean optical sensor lenses with isopropyl alcohol. Verify wiring harness continuity." },
+      4: { name: "MAX TWIN LIMIT EXCEEDED", category: "Cash Operations", action: "Recalibrate double-note/twin sensor. Inspect banknotes for proper fitness quality." },
+      5: { name: "PRESENTED SUCCESSFULLY", category: "Success", action: "Normal operation. Cash successfully presented to customer." },
+      6: { name: "PRESENTATION TRAY NOT HOMED", category: "Mechanical", action: "Inspect presentation tray position sensor. Clear foreign debris from tray guides." },
+      7: { name: "BULK PURGE SUCCESSFULL", category: "Success", action: "Normal operation. Cash purged to reject bin." },
+      8: { name: "MOTOR TIMEOUT NOT HOMED", category: "Hardware", action: "Inspect home position limit switch. Check motor drive circuitry." },
+      9: { name: "DISPENSER INITIALIZED", category: "Info", action: "Normal operation." },
+      10: { name: "DISPENSER NOT INITIALIZED", category: "Configuration", action: "Send initialization command from terminal software. Verify controller firmware." },
+      11: { name: "CASH JAM", category: "Critical Cash Jam", action: "Clear banknotes from transport chute manually. Check feed roller tension." },
+      12: { name: "NO CASH ON TRAY", category: "Cash Operations", action: "Verify pick module belts. Ensure cassette contains notes and pick mechanism is functional." },
+      13: { name: "SUSPECT CASH PICKEDUP", category: "Cash Operations", action: "Inspect suspect note compartment. Clean double detect / thickness sensors." },
+      14: { name: "CASH JAM NOT HOMED", category: "Critical Cash Jam", action: "Clear physical obstruction in presenter. Reset clamp mechanism home sensor." },
+      15: { name: "CASSETTE NOT ENABLED", category: "Configuration", action: "Enable cassette in terminal supervisor setup menu." },
+      16: { name: "NO NOTE LIMIT EXCEEDED", category: "Cash Operations", action: "Replenish cassette with notes and update note counters." },
+      17: { name: "NOTE THRESHOLD NOT SET", category: "Configuration", action: "Perform note thickness measurement and threshold calibration." },
+      18: { name: "DRIFT ERROR", category: "Sensors", action: "Recalibrate double detect optical sensors to fix signal drift." },
+      19: { name: "CALIB PROFILE MATCH", category: "Info", action: "Calibration verified." },
+      20: { name: "CALIBRATION NOT DONE", category: "Configuration", action: "Perform currency calibration for all active cassettes." },
+      21: { name: "CALIB THRES SEL FAILED", category: "Configuration", action: "Retry calibration using crisp, undamaged sample banknotes." },
+      22: { name: "PROFILE ITER LIMIT EXCEEDED", category: "Sensors", action: "Clean optical sensors. Check for ambient light interference." },
+      23: { name: "LESS SAMP ITR EXCEEDED", category: "Sensors", action: "Insert at least 20 sample notes into cassette and retry calibration." },
+      24: { name: "CASSETTE TYPE SENSOR FAILURE PULLUP PULLDOWN", category: "Hardware", action: "Check cassette microswitch wiring and backplane connectors." },
+      25: { name: "FLASH ERROR", category: "Firmware", action: "Re-flash dispenser firmware. Replace main control board if error persists." },
+      26: { name: "COUNTING LEFT UPPER DRIFT", category: "Sensors", action: "Clean upper-left counting sensor optics." },
+      27: { name: "COUNTING LEFT LOWER DRIFT", category: "Sensors", action: "Clean lower-left counting sensor optics." },
+      28: { name: "COUNTING RIGHT UPPER DRIFT", category: "Sensors", action: "Clean upper-right counting sensor optics." },
+      29: { name: "COUNTING RIGHT LOWER DRIFT", category: "Sensors", action: "Clean lower-right counting sensor optics." },
+      30: { name: "REAR SKEW LEFT UPPER DRIFT", category: "Sensors", action: "Clean rear skew upper-left sensor array." },
+      31: { name: "REAR SKEW LEFT LOWER DRIFT", category: "Sensors", action: "Clean rear skew lower-left sensor array." },
+      32: { name: "REAR SKEW RIGHT UPPER DRIFT", category: "Sensors", action: "Clean rear skew upper-right sensor array." },
+      33: { name: "REAR SKEW RIGHT LOWER DRIFT", category: "Sensors", action: "Clean rear skew lower-right sensor array." },
+      34: { name: "PREV TRANS CASH IN TRAY", category: "Cash Operations", action: "Clear forgotten cash from presentation tray or clean tray optical sensor." },
+      35: { name: "DISP INIT SUCCESS PREV CASH BP SUCCESS", category: "Info", action: "Forgotten cash purged successfully during startup." },
+      36: { name: "DISP INIT FAIL PREV CASH BP SUCCESS", category: "Hardware", action: "Dispenser failed initialization after bulk purge. Re-initialize module." },
+      37: { name: "DISP INIT FAIL PREV CASH BP FAIL", category: "Critical Cash Jam", action: "Clear jammed notes in bulk purge chute and restart unit." },
+      38: { name: "PREV TRANS CASH TAKEN", category: "Info", action: "Cash collected by user." },
+      39: { name: "CARTRIDGE HOMED", category: "Info", action: "Cartridge positioned successfully." },
+      40: { name: "SAFE SHUTTER OPEN FAILS", category: "Hardware", action: "Check safe shutter solenoid drive and physical rails for obstruction." },
+      41: { name: "SAFE SHUTTER CLOSE FAILS", category: "Hardware", action: "Check shutter optical safety sensor and clearance path." },
+      42: { name: "CARTRIDGE POSITION ERROR", category: "Hardware", action: "Re-seat cassette and verify guide rail locks." },
+      43: { name: "CAM POSITION ERROR", category: "Mechanical", action: "Inspect CAM mechanism home sensor and gear teeth." },
+      44: { name: "PURGE BIN NOT INSERTED", category: "Hardware", action: "Insert purge bin properly and verify microswitch contact." },
+      45: { name: "CASSETTE INSERTION PROBLEM", category: "Hardware", action: "Inspect cassette latch and connector pins." },
+      46: { name: "TWIN SENSOR NOISE UPPER DRIFT", category: "Sensors", action: "Check twin sensor electrical shield and ground connection." },
+      47: { name: "BILL MOVE TO PRESENTER FAIL", category: "Transport", action: "Inspect transport rollers and divert solenoid for slipping." },
+      48: { name: "PURGEBIN LID CONFIG MIS MATCH", category: "Configuration", action: "Verify purge bin lid lock configuration switches." },
+      49: { name: "RETRACT CLR BEFORE PRESENT BLK", category: "Transport", action: "Perform retract clearing cycle before presentation." },
+      50: { name: "TOTAL NOTE COUNT OUTOF RANGE", category: "Configuration", action: "Adjust max dispense limit in host application parameters." },
+      51: { name: "NOTE WIDTH OUTOF RANGE", category: "Sensors", action: "Adjust cassette side note guides to fit currency dimensions." },
+      52: { name: "CART IN SBL APP", category: "Info", action: "Cartridge in single bill loading state." },
+      53: { name: "CART COMM ERROR", category: "Communication", action: "Check serial/I2C communication harness to cassette board." },
+      54: { name: "CASSETTE TYPE SENSOR FAILURE COMBINATION", category: "Hardware", action: "Replace cassette size detection microswitch assembly." },
+      55: { name: "INTER CASSETTE MOVE ERROR", category: "Transport", action: "Check vertical transport path between cassettes." },
+      56: { name: "CALIB CASSETTE TYPE MISMATCH", category: "Configuration", action: "Ensure cassette denomination matches software settings." },
+      57: { name: "CARTRIDGE FWF UPDATE SUCCESS", category: "Info", action: "Firmware update completed." },
+      58: { name: "CARTRIDGE DATA SENT FAIL", category: "Communication", action: "Retry data transfer to cartridge EEPROM." },
+      59: { name: "CARTRIDGE DATA RECEV FAIL", category: "Communication", action: "Check cassette connector pin contact." },
+      60: { name: "CARTRIDGE INVALID DATA RECEIVED", category: "Communication", action: "Reset cartridge memory module." },
+      61: { name: "CARTRIDGE DATA SENT SUCCESS", category: "Info", action: "Data transfer verified." },
+      62: { name: "CARTRIDGE CHECKSUM FAIL", category: "Firmware", action: "Re-write cassette parameter block." },
+      63: { name: "MAX PEEP PURGE LIMIT EXCEED", category: "Cash Operations", action: "Purge bin is full. Empty bin and reset reject counters." },
+      64: { name: "PURGE BIN LID OPEN FAIL", category: "Hardware", action: "Check purge bin lid solenoid mechanism." },
+      65: { name: "PURGE BIN LID CLOSE FAIL", category: "Hardware", action: "Inspect lid latch spring and position sensor." },
+      66: { name: "ACK RX FAIL FOR SHUTTER OPEN", category: "Communication", action: "Check shutter interface cable connection." },
+      67: { name: "COMMAND VERSION MISMATCH", category: "Firmware", action: "Upgrade dispenser firmware or terminal API driver." },
+      68: { name: "CCM VER UNSUPPORT MISMATCH", category: "Firmware", action: "Flash supported firmware build to CCM controller." },
+      69: { name: "FID A CARD REMOVE TIMEOUT", category: "Card Reader", action: "Inspect motorized card reader entry slot." },
+      70: { name: "NOT IN SESSION", category: "System State", action: "Restart terminal application session." },
+      71: { name: "PAIRING REQUEST EXHAUSTED", category: "Communication", action: "Re-pair security board with main dispenser controller." },
+      72: { name: "SESSION DETAILS MISMATCH", category: "System State", action: "Clear local session cache and re-authenticate." },
+      73: { name: "DOOR OPEN IDENTIFIED", category: "Security", action: "Check safe cabinet door switch." },
+      74: { name: "NO CASH ON TRAY - PRESENT BLOCK BEFORE CASH PRESENT", category: "Transport", action: "Check pick module drive. Notes did not reach tray before presentation." },
+      75: { name: "NO CASH ON TRAY - RETRACT CLEAR BEFORE CASH PRESENT", category: "Transport", action: "Inspect retract channel for dropped bills." },
+      76: { name: "CAM FIND HOME TO", category: "Mechanical Timeout", action: "Check CAM motor assembly and home sensor." },
+      77: { name: "CAM DISPENSE TO CLAMP TO", category: "Mechanical Timeout", action: "Inspect clamp assembly drive belt." },
+      78: { name: "CAM CLAMP TO PRESENT TO", category: "Mechanical Timeout", action: "Check presenter shaft gears and motor drive." },
+      79: { name: "CAM PRESENT TO BP TO", category: "Mechanical Timeout", action: "Check bulk purge pathway from presenter." },
+      80: { name: "CAM DISPENSE TO PURGE TO", category: "Mechanical Timeout", action: "Inspect divert flap actuator." },
+      81: { name: "CAM BP TO DISPENSE TO", category: "Mechanical Timeout", action: "Check CAM return stroke mechanics." },
+      82: { name: "CART FIND HOME TO", category: "Mechanical Timeout", action: "Check cartridge home sensor and motor." },
+      83: { name: "CART C2P TO (cassette to present)", category: "Mechanical Timeout", action: "Note transport timeout from cassette to presenter. Check roller wear." },
+      84: { name: "I2C COMM ERROR (DLDR)", category: "Hardware/Communication", action: "Replace internal I2C ribbon cable." },
+      85: { name: "LED FAILURE (DLDR)", category: "Hardware", action: "Replace LED sensor board." },
+      86: { name: "CART P2BP TO (Present to Bulk purge)", category: "Mechanical Timeout", action: "Inspect bulk purge chute for paper jams." },
+      87: { name: "DISPENSER TIMEOUT FAULT", category: "Hardware", action: "General dispenser response timeout. Restart module." },
+      88: { name: "HIGH SKEW DETECTED", category: "Sensors", action: "Clean skew detection sensors and check pick belt alignment." },
+      89: { name: "DISPENSE PATH OBSTRUCTION", category: "Mechanical", action: "Inspect transport belts for foreign matter." },
+      90: { name: "CASSETTE INTERLOCK OPEN", category: "Hardware", action: "Ensure cassette is fully locked in position." },
+      91: { name: "REJECT BIN NEAR FULL", category: "Cash Operations", action: "Plan maintenance visit to empty reject bin." },
+      92: { name: "SOLENOID DRIVE FAULT", category: "Hardware", action: "Check divert solenoid board circuit." },
+      93: { name: "OPTICAL COVER DUSTED", category: "Sensors", action: "Clean all optical sensor windows." },
+      94: { name: "POWER VOLTAGE DROP", category: "Power", action: "Check ATM power supply output voltages (24V/12V DC)." },
+      95: { name: "MAIN MOTOR OVERCURRENT", category: "Hardware", action: "Check main motor for mechanical binding." },
+      96: { name: "DISPENSER LOCK FAILURE", category: "Mechanical", action: "Inspect mechanical cassette lock mechanism." },
+      97: { name: "REQ NOT REACHED TO CDM", category: "Communication", action: "Check CDM board connection to terminal PC." },
+      98: { name: "COMMUNICATION BUS ERROR", category: "Communication", action: "Inspect USB/RS232 communication cables." },
+      99: { name: "UNKNOWN ERROR", category: "Unhandled", action: "Consult manufacturer hardware logs." }
     };
 
     // -------------------------------------------------------------
-    // 2. MONITORED KEYWORDS & DISPENSER PATTERNS
+    // 2. MONITORED KEYWORDS & DISPENSER REGEX PATTERNS
     // -------------------------------------------------------------
     const KEYWORD_TARGETS = [
       "Switch conn failure",
@@ -425,33 +435,36 @@
       "command reject"
     ];
 
-    // Regular Expression to parse DISPENSER FAILURE patterns like:
-    // DISPENSER FAILURE (02:NO NOTES DISPENSED) or DISPENSER FAILURE (02) or DISPENSER FAILURE (11:CASH JAM)
+    // Regular Expression to match dispenser codes like "02:NO NOTES DISPENSED" or "DISPENSER FAILURE (02:NO NOTES DISPENSED)"
+    // Matches patterns like "02:NO NOTES DISPENSED" or "02: NO NOTES DISPENSED"
+    const CODE_PATTERN_REGEX = /\b(0[1-9]|[1-9][0-9])\s*:\s*(NO\s+NOTES\s+DISPENSED|[A-Z0-9\s()\-]+)/gi;
+    
+    // Pattern to catch DISPENSER FAILURE (...) lines
     const DISPENSER_FAILURE_REGEX = /DISPENSER\s+FAILURE\s*\(([^)]+)\)/gi;
 
-    // Standard log date extractor regex (e.g., 2026-10-17 or 17/10/2026 or Oct 17 2026)
+    // Date extractor regex (e.g. 2026-10-17, 17/10/2026, Oct 17 2026)
     const DATE_REGEX = /(\d{4}[-/.]\d{2}[-/.]\d{2}|\d{2}[-/.]\d{2}[-/.]\d{4})/;
 
-    // Global Data Store
+    // Data Storage Structure
     let analysisData = {
       totalEvents: 0,
-      codeErrors: {},     // Code -> Count
+      codeErrors: {},     // CodeNumber -> Count
       keywordErrors: {},  // Keyword -> Count
-      dispenserErrors: {},// Code/Description -> Count
-      dailyTrend: {},     // DateString -> { total, codes, keywords, dispenser }
-      detailedRecords: [] // Array of parsed records for excel export
+      dispenserErrors: {},// Raw Dispenser Line -> Count
+      dailyTrend: {},     // DateString -> { total, code, keyword, dispenser }
+      detailedRecords: [] // Items for Excel Export
     };
 
     let dailyChartInstance = null;
 
-    // Initialize UI on DOM Ready
+    // DOM Ready Initialization
     document.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
       initChart();
     });
 
     // -------------------------------------------------------------
-    // 3. LOG PARSING & PROCESSING ENGINE
+    // 3. LOG PARSING ENGINE
     // -------------------------------------------------------------
     async function handleFileUpload(event) {
       const files = event.target.files;
@@ -462,7 +475,7 @@
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        if (file.name.endsWith(".zip")) {
+        if (file.name.toLowerCase().endsWith(".zip")) {
           await processZipFile(file);
         } else {
           const content = await readFileAsText(file);
@@ -494,8 +507,8 @@
           }
         }
       } catch (err) {
-        console.error("ZIP extract error:", err);
-        alert("Failed to unzip or read archive file: " + zipFile.name);
+        console.error("ZIP processing error:", err);
+        alert("Error reading ZIP archive: " + zipFile.name);
       }
     }
 
@@ -516,66 +529,75 @@
       lines.forEach((line) => {
         if (!line.trim()) return;
 
-        // Extract Date if present
+        // Extract Date
         const dateMatch = line.match(DATE_REGEX);
         const dateStr = dateMatch ? normalizeDate(dateMatch[1]) : "Unknown Date";
 
-        let matchedAny = false;
+        let lineMatched = false;
 
-        // A. CHECK FOR ERROR CODES (Numeric Code Matches or Text Descriptions)
-        for (const [codeNum, info] of Object.entries(ERROR_MAP)) {
-          // Check for code pattern like Code 02 or Error 2 or exact description
-          const codeRegex = new RegExp(`\\b(code|err|error)?\\s*[:\\-]?\\s*0*${codeNum}\\b|${escapeRegExp(info.name)}`, 'i');
-          if (codeRegex.test(line)) {
+        // A. MATCH FORMAT "02:NO NOTES DISPENSED" OR "CODE 02"
+        let codeMatch;
+        CODE_PATTERN_REGEX.lastIndex = 0;
+        while ((codeMatch = CODE_PATTERN_REGEX.exec(line)) !== null) {
+          const codeNum = parseInt(codeMatch[1], 10);
+          if (codeNum >= 1 && codeNum <= 99) {
             analysisData.codeErrors[codeNum] = (analysisData.codeErrors[codeNum] || 0) + 1;
-            matchedAny = true;
+            lineMatched = true;
 
-            recordEvent(dateStr, 'code', codeNum, info.name, line);
+            const codeInfo = MASTER_ERROR_MAP[codeNum] || { name: codeMatch[2] || "UNKNOWN CODE" };
+            recordEvent(dateStr, 'code', codeNum, codeInfo.name, line);
           }
         }
 
-        // B. CHECK FOR MONITORED KEYWORDS
+        // B. MATCH DISPENSER FAILURE (...) LINES
+        let dispMatch;
+        DISPENSER_FAILURE_REGEX.lastIndex = 0;
+        while ((dispMatch = DISPENSER_FAILURE_REGEX.exec(line)) !== null) {
+          const failureContent = dispMatch[1].trim(); // e.g., "02:NO NOTES DISPENSED"
+          analysisData.dispenserErrors[failureContent] = (analysisData.dispenserErrors[failureContent] || 0) + 1;
+          lineMatched = true;
+
+          // Check if code number exists inside DISPENSER FAILURE bracket
+          const codeInside = failureContent.match(/^(0[1-9]|[1-9][0-9])/);
+          if (codeInside) {
+            const codeNum = parseInt(codeInside[1], 10);
+            if (!analysisData.codeErrors[codeNum]) {
+              analysisData.codeErrors[codeNum] = 1;
+            }
+          }
+
+          recordEvent(dateStr, 'dispenser', failureContent, failureContent, line);
+        }
+
+        // C. MATCH MONITORED KEYWORDS
         KEYWORD_TARGETS.forEach(keyword => {
           if (line.toLowerCase().includes(keyword.toLowerCase())) {
             analysisData.keywordErrors[keyword] = (analysisData.keywordErrors[keyword] || 0) + 1;
-            matchedAny = true;
+            lineMatched = true;
 
             recordEvent(dateStr, 'keyword', keyword, keyword, line);
           }
         });
 
-        // C. CHECK FOR DISPENSER FAILURE CATEGORIES (02:NO NOTES DISPENSED, etc.)
-        let dispMatch;
-        DISPENSER_FAILURE_REGEX.lastIndex = 0; // reset regex state
-        while ((dispMatch = DISPENSER_FAILURE_REGEX.exec(line)) !== null) {
-          const categoryText = dispMatch[1].trim(); // e.g., "02:NO NOTES DISPENSED"
-          analysisData.dispenserErrors[categoryText] = (analysisData.dispenserErrors[categoryText] || 0) + 1;
-          matchedAny = true;
-
-          recordEvent(dateStr, 'dispenser', categoryText, categoryText, line);
-        }
-
-        if (matchedAny) {
+        if (lineMatched) {
           analysisData.totalEvents++;
         }
       });
     }
 
     function recordEvent(dateStr, type, key, title, line) {
-      // Daily Trend Tracking
       if (!analysisData.dailyTrend[dateStr]) {
         analysisData.dailyTrend[dateStr] = { total: 0, code: 0, keyword: 0, dispenser: 0 };
       }
       analysisData.dailyTrend[dateStr].total++;
       analysisData.dailyTrend[dateStr][type]++;
 
-      // Store Detailed Log Record for Excel Export
       analysisData.detailedRecords.push({
         Date: dateStr,
         Type: type.toUpperCase(),
         Key: key,
         Description: title,
-        RawLogSnippet: line.trim()
+        RawLogLine: line.trim()
       });
     }
 
@@ -589,15 +611,11 @@
       return dStr;
     }
 
-    function escapeRegExp(string) {
-      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
-
     // -------------------------------------------------------------
-    // 4. DASHBOARD RENDER & INTERACTIVE UI
+    // 4. RENDERING & UI CONTROL
     // -------------------------------------------------------------
     function renderDashboard() {
-      // 1. Update Metrics Cards
+      // 1. Stat Cards
       document.getElementById("statTotalEvents").innerText = analysisData.totalEvents.toLocaleString();
       
       const totalCodeHits = Object.values(analysisData.codeErrors).reduce((a, b) => a + b, 0);
@@ -608,22 +626,20 @@
       document.getElementById("statKeywordErrors").innerText = totalKeywordHits.toLocaleString();
       document.getElementById("statDispenserErrors").innerText = totalDispenserHits.toLocaleString();
 
-      // Show Excel Button if data exists
       if (analysisData.totalEvents > 0) {
         document.getElementById("exportExcelBtn").classList.remove("hidden");
       }
 
-      // 2. Render Error Grid (SORTED FROM HIGHEST TO LOWEST HITS)
+      // 2. Render Error Grid (High to Low Hits Order)
       renderErrorGrid();
 
-      // 3. Render Keywords & Dispenser Lists
+      // 3. Render Keyword & Dispenser Lists
       renderKeywordList();
       renderDispenserList();
 
-      // 4. Render Day-by-Day Table & Chart
+      // 4. Render Table & Daily Chart
       renderDailyTableAndChart();
 
-      // Re-initialize Lucide icons for new DOM elements
       lucide.createIcons();
     }
 
@@ -631,35 +647,42 @@
       const grid = document.getElementById("errorGrid");
       grid.innerHTML = "";
 
-      // Convert codeErrors object to sorted array (Highest Hits -> Lowest Hits)
+      // Convert codeErrors to array and sort HIGH TO LOW
       const sortedErrors = Object.entries(analysisData.codeErrors)
-        .map(([codeNum, count]) => ({ codeNum, count, info: ERROR_MAP[codeNum] || { name: "UNKNOWN", action: "No predefined action" } }))
+        .map(([codeNum, count]) => {
+          const num = parseInt(codeNum, 10);
+          return {
+            codeNum: num,
+            formattedCode: num < 10 ? `0${num}` : `${num}`,
+            count,
+            info: MASTER_ERROR_MAP[num] || { name: "NO NOTES DISPENSED", action: "Check dispenser status." }
+          };
+        })
         .sort((a, b) => b.count - a.count);
 
-      document.getElementById("errorTypeCount").innerText = `${sortedErrors.length} Unique Errors Detected`;
+      document.getElementById("errorTypeCount").innerText = `${sortedErrors.length} Unique Codes`;
 
       if (sortedErrors.length === 0) {
         grid.innerHTML = `
           <div class="col-span-full text-center py-12 text-slate-400">
             <i data-lucide="check-circle" class="w-10 h-10 mx-auto mb-2 text-emerald-400"></i>
-            <p class="text-sm font-medium">No Hardware Error Codes Found in Log Analysis!</p>
+            <p class="text-sm font-medium">No dispenser error codes found in analyzed log files.</p>
           </div>
         `;
         return;
       }
 
-      sortedErrors.forEach(({ codeNum, count, info }) => {
+      sortedErrors.forEach(({ formattedCode, count, info, codeNum }) => {
         const card = document.createElement("div");
         card.className = "aesthetic-card rounded-xl p-4 hover:shadow-md transition-all cursor-pointer border border-slate-200/80 hover:border-indigo-300 bounce-tap group relative overflow-hidden";
-        card.onclick = () => openActionModal(codeNum, count, info);
+        card.onclick = () => openActionModal(formattedCode, count, info);
 
-        const isCritical = count > 10;
-        const badgeColor = isCritical ? "bg-rose-100 text-rose-700" : "bg-indigo-50 text-indigo-700";
+        const badgeColor = count > 10 ? "bg-rose-100 text-rose-700" : "bg-indigo-50 text-indigo-700";
 
         card.innerHTML = `
           <div class="flex items-start justify-between mb-2">
             <span class="text-xs font-bold px-2.5 py-1 rounded-md ${badgeColor}">
-              CODE ${codeNum}
+              CODE ${formattedCode}
             </span>
             <span class="text-xs font-bold text-slate-500 group-hover:text-indigo-600 transition-colors flex items-center gap-1">
               <i data-lucide="zap" class="w-3 h-3"></i>
@@ -667,10 +690,10 @@
             </span>
           </div>
           <h4 class="text-xs font-bold text-slate-800 line-clamp-2 uppercase tracking-tight group-hover:text-indigo-600 transition-colors">
-            ${info.name}
+            ${formattedCode}:${info.name}
           </h4>
           <p class="text-[11px] text-slate-400 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
-            <span>Action Required</span>
+            <span>Action Points</span>
             <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-1 transition-transform"></i>
           </p>
         `;
@@ -687,7 +710,7 @@
         .sort((a, b) => b[1] - a[1]);
 
       if (sortedKeywords.length === 0) {
-        container.innerHTML = `<div class="text-xs text-slate-400 italic">No keyword failures detected in logs</div>`;
+        container.innerHTML = `<div class="text-xs text-slate-400 italic">No keyword failures detected</div>`;
         return;
       }
 
@@ -713,16 +736,16 @@
         .sort((a, b) => b[1] - a[1]);
 
       if (sortedDispenser.length === 0) {
-        container.innerHTML = `<div class="text-xs text-slate-400 italic">No dispenser category codes found</div>`;
+        container.innerHTML = `<div class="text-xs text-slate-400 italic">No dispenser failure lines detected</div>`;
         return;
       }
 
-      sortedDispenser.forEach(([cat, hits]) => {
+      sortedDispenser.forEach(([lineText, hits]) => {
         const item = document.createElement("div");
         item.className = "flex items-center justify-between text-xs bg-amber-50/50 hover:bg-amber-50 border border-amber-100 rounded-lg p-2.5 transition-colors";
         item.innerHTML = `
-          <span class="font-medium text-amber-900 truncate max-w-[200px]" title="${cat}">
-            ${cat}
+          <span class="font-medium text-amber-900 truncate max-w-[200px]" title="${lineText}">
+            ${lineText}
           </span>
           <span class="font-bold text-amber-700 bg-white px-2 py-0.5 rounded shadow-xs border border-amber-100">${hits} hits</span>
         `;
@@ -737,7 +760,7 @@
       const sortedDates = Object.keys(analysisData.dailyTrend).sort();
 
       if (sortedDates.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-xs text-slate-400">No dated records found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-xs text-slate-400">No dated records available.</td></tr>`;
         updateChart([], []);
         return;
       }
@@ -766,16 +789,16 @@
     }
 
     // -------------------------------------------------------------
-    // 5. CHART.JS INTEGRATION
+    // 5. CHART.JS VISUALIZATION
     // -------------------------------------------------------------
     function initChart() {
-      const ctx = document.getElementById('dailyChart').getContext('var(--chart-ctx)', {willReadFrequently: true}) || document.getElementById('dailyChart');
+      const ctx = document.getElementById('dailyChart').getContext('2d');
       dailyChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
           labels: [],
           datasets: [{
-            label: 'Daily Error Hits',
+            label: 'Daily Failures',
             data: [],
             borderColor: '#6366f1',
             backgroundColor: 'rgba(99, 102, 241, 0.08)',
@@ -808,24 +831,23 @@
     }
 
     // -------------------------------------------------------------
-    // 6. ACTION POINTS MODAL DIALOG
+    // 6. ACTION MODAL
     // -------------------------------------------------------------
-    function openActionModal(codeNum, count, info) {
-      document.getElementById("modalCodeBadge").innerText = `ERROR CODE ${codeNum}`;
-      document.getElementById("modalTitle").innerText = info.name;
-      document.getElementById("modalHits").innerText = `${count} Total Log Hits`;
+    function openActionModal(formattedCode, count, info) {
+      document.getElementById("modalCodeBadge").innerText = `CODE ${formattedCode}`;
+      document.getElementById("modalTitle").innerText = `${formattedCode}:${info.name}`;
+      document.getElementById("modalHits").innerText = `${count} Occurrence Hits`;
 
       const actionsList = document.getElementById("modalActionsList");
       actionsList.innerHTML = "";
 
-      // Break down actions into structured bullet points
-      const actions = info.action.split('. ').filter(a => a.trim().length > 0);
-      actions.forEach(actionText => {
+      const steps = info.action.split('. ').filter(s => s.trim().length > 0);
+      steps.forEach(step => {
         const li = document.createElement("li");
         li.className = "flex items-start gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100";
         li.innerHTML = `
           <i data-lucide="wrench" class="w-4 h-4 text-indigo-500 mt-0.5 shrink-0"></i>
-          <span>${actionText.endsWith('.') ? actionText : actionText + '.'}</span>
+          <span>${step.endsWith('.') ? step : step + '.'}</span>
         `;
         actionsList.appendChild(li);
       });
@@ -852,7 +874,7 @@
     }
 
     // -------------------------------------------------------------
-    // 7. EXCEL EXPORT FUNCTIONALITY
+    // 7. EXCEL EXPORT
     // -------------------------------------------------------------
     function exportToExcel() {
       if (analysisData.detailedRecords.length === 0) {
@@ -860,34 +882,35 @@
         return;
       }
 
-      // 1. Summary Sheet Data
+      // Summary Sheet
       const summaryData = [
-        ["ATM Diagnostic Report Summary"],
+        ["ATM Log Diagnostic Executive Report"],
         ["Generated Date", new Date().toLocaleString()],
-        ["Total Processed Events", analysisData.totalEvents],
+        ["Total Analyzed Events", analysisData.totalEvents],
         [],
         ["Error Code", "Description", "Hit Count", "Recommended Action"],
-        ...Object.entries(analysisData.codeErrors).map(([code, hits]) => [
-          `CODE ${code}`,
-          ERROR_MAP[code]?.name || "UNKNOWN",
-          hits,
-          ERROR_MAP[code]?.action || ""
-        ])
+        ...Object.entries(analysisData.codeErrors).map(([code, hits]) => {
+          const num = parseInt(code, 10);
+          const formatted = num < 10 ? `0${num}` : `${num}`;
+          return [
+            `${formatted}:${MASTER_ERROR_MAP[num]?.name || 'NO NOTES DISPENSED'}`,
+            MASTER_ERROR_MAP[num]?.name || "NO NOTES DISPENSED",
+            hits,
+            MASTER_ERROR_MAP[num]?.action || ""
+          ];
+        })
       ];
 
-      // 2. Keyword Failures Sheet
       const keywordData = [
         ["Keyword Failure", "Total Hits"],
         ...Object.entries(analysisData.keywordErrors).map(([kw, hits]) => [kw, hits])
       ];
 
-      // 3. Dispenser Categories Sheet
       const dispenserData = [
-        ["Dispenser Failure Category", "Total Hits"],
-        ...Object.entries(analysisData.dispenserErrors).map(([cat, hits]) => [cat, hits])
+        ["Dispenser Failure Description", "Total Hits"],
+        ...Object.entries(analysisData.dispenserErrors).map(([line, hits]) => [line, hits])
       ];
 
-      // Create Workbook
       const wb = XLSX.utils.book_new();
       
       const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
@@ -895,49 +918,49 @@
       const wsDispenser = XLSX.utils.aoa_to_sheet(dispenserData);
       const wsDetailed = XLSX.utils.json_to_sheet(analysisData.detailedRecords);
 
-      XLSX.utils.book_append_sheet(wb, wsSummary, "Error Codes Summary");
+      XLSX.utils.book_append_sheet(wb, wsSummary, "Error Code Summary");
       XLSX.utils.book_append_sheet(wb, wsKeywords, "Keyword Failures");
       XLSX.utils.book_append_sheet(wb, wsDispenser, "Dispenser Failures");
-      XLSX.utils.book_append_sheet(wb, wsDetailed, "Raw Event Logs");
+      XLSX.utils.book_append_sheet(wb, wsDetailed, "Raw Analyzed Logs");
 
-      XLSX.writeFile(wb, `ATM_Log_Diagnostics_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+      XLSX.writeFile(wb, `ATM_Log_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
     }
 
     // -------------------------------------------------------------
-    // 8. SAMPLE / DEMO LOG GENERATOR
+    // 8. SAMPLE DEMO DATA GENERATOR
     // -------------------------------------------------------------
     function triggerDemoData() {
-      showProcessing(true, "Generating & analyzing demo log file...");
+      showProcessing(true, "Generating and processing demo log bundle...");
       
       setTimeout(() => {
         const demoLogs = `
-2026-10-15 10:12:01 ERR CODE 02 - MOTOR TIMEOUT IN DISPENSER
-2026-10-15 10:15:22 DISPENSER FAILURE (02:NO NOTES DISPENSED)
-2026-10-15 11:20:00 Switch conn failure during host sync
-2026-10-15 12:00:45 ERR CODE 11 - CASH JAM IN TRANSPORT CHUTE
-2026-10-15 12:05:10 DISPENSER FAILURE (11:CASH JAM)
-2026-10-15 14:10:00 app level error while processing card
-2026-10-16 09:12:30 ERR CODE 02 - MOTOR TIMEOUT
+2026-10-15 10:12:01 DISPENSER FAILURE (02:NO NOTES DISPENSED)
+2026-10-15 10:15:22 02:NO NOTES DISPENSED
+2026-10-15 11:20:00 Switch conn failure during transaction sync
+2026-10-15 12:00:45 11:NO NOTES DISPENSED
+2026-10-15 12:05:10 DISPENSER FAILURE (11:NO NOTES DISPENSED)
+2026-10-15 14:10:00 app level error while processing EMV card
+2026-10-16 09:12:30 02:NO NOTES DISPENSED
 2026-10-16 09:14:00 DISPENSER FAILURE (02:NO NOTES DISPENSED)
-2026-10-16 10:22:11 suspect-1 detected in upper sensor path
-2026-10-16 11:05:44 ATR error from Smart Card Reader
-2026-10-16 12:30:12 ERR CODE 03 - SENSOR FAILURE
-2026-10-16 13:40:55 ERR CODE 02 - MOTOR TIMEOUT
-2026-10-16 15:10:00 pin encryption failure on EPP key exchange
-2026-10-17 08:00:12 ERR CODE 11 - CASH JAM
-2026-10-17 08:02:00 DISPENSER FAILURE (11:CASH JAM)
-2026-10-17 09:15:33 switch resp-timeout on host request
-2026-10-17 10:45:00 command reject by CDM module
-2026-10-17 11:12:00 ERR CODE 76 - CAM FIND HOME TO
-2026-10-17 12:00:00 ERR CODE 02 - MOTOR TIMEOUT
-2026-10-17 13:10:15 suspect-2 note rejected to divert bin
+2026-10-16 10:22:11 suspect-1 flagged by optical detector
+2026-10-16 11:05:44 ATR error on motorized card reader
+2026-10-16 12:30:12 03:NO NOTES DISPENSED
+2026-10-16 13:40:55 02:NO NOTES DISPENSED
+2026-10-16 15:10:00 pin encryption failure on EPP unit
+2026-10-17 08:00:12 11:NO NOTES DISPENSED
+2026-10-17 08:02:00 DISPENSER FAILURE (11:NO NOTES DISPENSED)
+2026-10-17 09:15:33 switch resp-timeout
+2026-10-17 10:45:00 command reject by CDM controller
+2026-10-17 11:12:00 76:NO NOTES DISPENSED
+2026-10-17 12:00:00 02:NO NOTES DISPENSED
+2026-10-17 13:10:15 suspect-2 note diverted to reject bin
         `;
 
         resetDataStore();
         processLogContent(demoLogs, "sample_atm_logs.log");
         showProcessing(false);
         renderDashboard();
-      }, 400);
+      }, 350);
     }
 
     function showProcessing(show, text = "") {
