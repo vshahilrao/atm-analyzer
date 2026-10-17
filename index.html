@@ -1,864 +1,954 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATM Log Field Dashboard & Exporter</title>
-    <!-- JSZip for Unzipping & SheetJS for Excel Exporter -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- HTML5 QR Code Scanner Library -->
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <style>
-        :root {
-            --bg-color: #090d16;
-            --card-bg: rgba(21, 32, 54, 0.75);
-            --card-inner: #0d1527;
-            --accent-cyan: #06b6d4;
-            --accent-blue: #38bdf8;
-            --accent-green: #10b981;
-            --accent-red: #f43f5e;
-            --accent-purple: #8b5cf6;
-            --accent-yellow: #f59e0b;
-            --text-main: #f8fafc;
-            --text-sub: #94a3b8;
-            --border-color: rgba(255, 255, 255, 0.08);
-            --border-glow: rgba(56, 189, 248, 0.3);
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATM Log Analytics & Diagnostics Dashboard</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SheetJS (xlsx) for Excel Export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- JSZip for handling uploaded ZIP log bundles -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <style>
+    /* Bouncy animation for icons when clicked/tapped */
+    .bounce-tap:active i, .bounce-tap:active svg {
+      transform: scale(0.75);
+      transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .bounce-tap i, .bounce-tap svg {
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .bounce-tap:hover i, .bounce-tap:hover svg {
+      transform: scale(1.15) rotate(-3deg);
+    }
+    
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
 
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
-            background: var(--bg-color); 
-            background-image: 
-                radial-gradient(at 10% 10%, rgba(56, 189, 248, 0.12) 0px, transparent 40%),
-                radial-gradient(at 90% 90%, rgba(16, 185, 129, 0.08) 0px, transparent 40%),
-                radial-gradient(at 50% 50%, rgba(139, 92, 246, 0.05) 0px, transparent 60%);
-            background-attachment: fixed;
-            color: var(--text-main); 
-            padding: 28px 20px; 
-            margin: 0; 
-            min-height: 100vh;
-            box-sizing: border-box;
-        }
-
-        .dashboard-header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-
-        h2 { 
-            margin: 0; 
-            font-size: 26px; 
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
-        }
-
-        .subtitle {
-            font-size: 13px;
-            color: var(--text-sub);
-            margin-top: 6px;
-        }
-        
-        .btn-group { display: flex; gap: 16px; margin-bottom: 20px; max-width: 1200px; margin-left: auto; margin-right: auto; }
-        
-        button { 
-            flex: 1; 
-            background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%); 
-            color: #ffffff; 
-            border: 1px solid rgba(255, 255, 255, 0.15); 
-            padding: 16px 20px; 
-            font-size: 14px; 
-            border-radius: 10px; 
-            font-weight: 700; 
-            letter-spacing: 0.02em;
-            cursor: pointer; 
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        
-        button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 25px -4px rgba(37, 99, 235, 0.6);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        button.qr-btn {
-            background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
-            box-shadow: 0 8px 20px -4px rgba(168, 85, 247, 0.35);
-        }
-
-        button.qr-btn:hover:not(:disabled) {
-            box-shadow: 0 12px 25px -4px rgba(168, 85, 247, 0.55);
-        }
-
-        button.excel-btn { 
-            background: linear-gradient(135deg, #059669 0%, #10b981 100%); 
-            box-shadow: 0 8px 20px -4px rgba(16, 185, 129, 0.35);
-        }
-
-        button.excel-btn:hover:not(:disabled) {
-            box-shadow: 0 12px 25px -4px rgba(16, 185, 129, 0.55);
-        }
-
-        button:disabled { 
-            opacity: 0.3; 
-            cursor: not-allowed; 
-            transform: none; 
-            box-shadow: none; 
-            border: 1px solid transparent;
-        }
-
-        input[type="file"] { display: none; }
-        
-        .status { 
-            margin: 12px 0 20px 0; 
-            font-size: 13px; 
-            font-weight: 600;
-            color: var(--accent-yellow); 
-            text-align: center; 
-            letter-spacing: 0.02em;
-        }
-
-        /* KPI Dashboard */
-        .kpi-container { 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            gap: 16px; 
-            margin-top: 20px;
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .kpi-card { 
-            background: var(--card-bg); 
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            padding: 20px; 
-            border-radius: 12px; 
-            text-align: center; 
-            border: 1px solid var(--border-color); 
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-            transition: all 0.25s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 2px;
-            background: linear-gradient(90deg, transparent, var(--accent-blue), transparent);
-            opacity: 0.5;
-        }
-
-        .kpi-card:hover { 
-            border-color: var(--border-glow); 
-            transform: translateY(-2px);
-        }
-
-        .kpi-num { 
-            font-size: 32px; 
-            font-weight: 800; 
-            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.03em;
-            line-height: 1.1;
-        }
-
-        .kpi-lbl { 
-            font-size: 11px; 
-            font-weight: 700; 
-            text-transform: uppercase; 
-            letter-spacing: 0.08em; 
-            color: var(--text-sub); 
-            margin-top: 8px; 
-        }
-
-        /* Interactive Error Box Section */
-        .action-panel { 
-            margin-top: 24px; 
-            background: var(--card-bg); 
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-radius: 14px; 
-            padding: 22px; 
-            border: 1px solid var(--border-color); 
-            border-left: 5px solid var(--accent-blue); 
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .action-header { 
-            font-size: 15px; 
-            font-weight: 800; 
-            letter-spacing: 0.03em;
-            text-transform: uppercase;
-            color: var(--accent-blue); 
-            margin-bottom: 6px; 
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
-        }
-
-        .action-subtext {
-            font-size: 12px;
-            color: var(--text-sub);
-            margin-bottom: 16px;
-        }
-
-        .error-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
-            gap: 14px; 
-        }
-
-        .error-card { 
-            background: var(--card-inner); 
-            padding: 16px; 
-            border-radius: 10px; 
-            border: 1px solid var(--border-color); 
-            transition: all 0.25s ease;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: relative;
-        }
-
-        .error-card:hover {
-            border-color: var(--accent-blue);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px -5px rgba(56, 189, 248, 0.3);
-            background: rgba(13, 21, 39, 0.9);
-        }
-
-        .error-card-title { 
-            font-weight: 700; 
-            color: var(--text-main); 
-            font-size: 13px;
-            padding-right: 8px;
-        }
-
-        .badge { 
-            background: rgba(244, 63, 94, 0.15); 
-            color: #fb7185; 
-            border: 1px solid rgba(244, 63, 94, 0.35);
-            padding: 4px 10px; 
-            border-radius: 20px; 
-            font-size: 12px; 
-            font-weight: 800; 
-            letter-spacing: 0.03em;
-            box-shadow: 0 2px 8px rgba(244, 63, 94, 0.2);
-            white-space: nowrap;
-        }
-
-        /* Matrix Table Section */
-        .matrix-container {
-            margin-top: 24px;
-            background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-radius: 14px;
-            padding: 22px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
-            overflow-x: auto;
-        }
-
-        table.matrix-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-            text-align: left;
-        }
-
-        table.matrix-table th {
-            background: rgba(13, 21, 39, 0.8);
-            color: var(--accent-blue);
-            padding: 12px 14px;
-            font-weight: 700;
-            border-bottom: 2px solid var(--border-color);
-            white-space: nowrap;
-        }
-
-        table.matrix-table td {
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--border-color);
-            color: var(--text-main);
-            white-space: nowrap;
-        }
-
-        table.matrix-table tr:hover td {
-            background: rgba(56, 189, 248, 0.05);
-        }
-
-        /* Interactive Modal Popup */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(4, 7, 13, 0.85);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 999;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .modal-content {
-            background: #0f172a;
-            border: 1px solid var(--accent-blue);
-            border-radius: 16px;
-            max-width: 500px;
-            width: 100%;
-            padding: 24px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.2);
-            position: relative;
-            animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        @keyframes modalFadeIn {
-            from { opacity: 0; transform: scale(0.95) translateY(10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 16px;
-        }
-
-        .modal-title {
-            font-size: 16px;
-            font-weight: 800;
-            color: var(--accent-yellow);
-            line-height: 1.3;
-        }
-
-        .close-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-sub);
-            font-size: 20px;
-            cursor: pointer;
-            padding: 0;
-            line-height: 1;
-            box-shadow: none;
-            flex: initial;
-            width: auto;
-        }
-
-        .close-btn:hover {
-            color: var(--accent-red);
-            transform: none;
-            box-shadow: none;
-        }
-
-        .modal-body {
-            background: var(--card-inner);
-            padding: 16px;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            margin-top: 12px;
-        }
-
-        .action-label {
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--accent-green);
-            margin-bottom: 6px;
-        }
-
-        .action-text {
-            font-size: 13.5px;
-            color: var(--text-main);
-            line-height: 1.5;
-        }
-
-        #qr-reader {
-            width: 100%;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-    </style>
+    /* Soft Glow Shadows */
+    .aesthetic-card {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+    }
+  </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
 
-    <div class="dashboard-header">
-        <h2>ATM Troubleshooting Dashboard</h2>
-        <div class="subtitle">Real-time log analysis & automated diagnostics summary</div>
-    </div>
+  <!-- TOP HEADER -->
+  <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-indigo-600 p-2 rounded-xl text-white bounce-tap cursor-pointer">
+          <i data-lucide="activity" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight tracking-tight text-white">ATM Log Diagnostics</h1>
+          <p class="text-xs text-slate-400">Failure Analysis & Action Intelligence Dashboard</p>
+        </div>
+      </div>
 
-    <div class="btn-group">
-        <button onclick="document.getElementById('fileInput').click()">📂 Upload Logs / ZIP</button>
-        <button class="qr-btn" onclick="startQrScanner()">📷 Scan QR Code</button>
-        <button id="downloadBtn" class="excel-btn" onclick="exportToExcel()" disabled>📊 Download Excel Report</button>
-    </div>
-    <input type="file" id="fileInput" multiple accept=".txt,.log,.zip" onchange="handleFileSelection(this)">
+      <div class="flex items-center space-x-3">
+        <button id="exportExcelBtn" onclick="exportToExcel()" class="hidden bounce-tap bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all flex items-center space-x-2 shadow-sm">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+          <span>Export Excel Report</span>
+        </button>
+        <button onclick="triggerDemoData()" class="bounce-tap bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium px-3 py-2 rounded-lg transition-all border border-slate-700 flex items-center space-x-1.5">
+          <i data-lucide="play-circle" class="w-4 h-4"></i>
+          <span>Load Sample Logs</span>
+        </button>
+      </div>
+    </div>
+  </header>
 
-    <div id="status" class="status"></div>
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
 
-    <!-- Summary KPIs -->
-    <div id="kpiSection" class="kpi-container" style="display:none;">
-        <div class="kpi-card">
-            <div id="kpiFiles" class="kpi-num">0</div>
-            <div class="kpi-lbl">Files Processed</div>
-        </div>
-        <div class="kpi-card">
-            <div id="kpiHits" class="kpi-num">0</div>
-            <div class="kpi-lbl">Total Issue Hits</div>
-        </div>
-        <div class="kpi-card">
-            <div id="kpiDates" class="kpi-num">0</div>
-            <div class="kpi-lbl">Affected Days</div>
-        </div>
-    </div>
+    <!-- FILE UPLOAD DROPZONE -->
+    <section class="aesthetic-card rounded-2xl p-6 transition-all border-dashed border-2 border-indigo-200 hover:border-indigo-400 bg-gradient-to-r from-indigo-50/30 via-white to-slate-50">
+      <div class="flex flex-col items-center justify-center text-center cursor-pointer" onclick="document.getElementById('logFileInput').click()">
+        <input type="file" id="logFileInput" class="hidden" multiple accept=".log,.txt,.zip" onchange="handleFileUpload(event)">
+        <div class="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mb-3 bounce-tap shadow-sm">
+          <i data-lucide="upload-cloud" class="w-8 h-8"></i>
+        </div>
+        <h3 class="text-base font-semibold text-slate-800">Drop ATM Log Files or ZIP Archives here</h3>
+        <p class="text-xs text-slate-500 mt-1">Supports standard TXT/LOG files and compressed ZIP bundles containing multiple logs</p>
+        <div class="mt-4 flex items-center space-x-2 text-xs text-slate-400">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+            Auto-Detects 99 Error Codes
+          </span>
+          <span>•</span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+            Keyword Failures
+          </span>
+          <span>•</span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+            Dispenser Categories
+          </span>
+        </div>
+      </div>
+      <!-- Processing Progress Indicator -->
+      <div id="processingStatus" class="hidden mt-4 pt-4 border-t border-slate-200 text-center">
+        <div class="flex items-center justify-center space-x-2 text-sm text-indigo-600 font-medium">
+          <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
+          <span id="statusText">Analyzing Log Content...</span>
+        </div>
+      </div>
+    </section>
 
-    <!-- Interactive Error Category Panel -->
-    <div id="actionSummarySection" class="action-panel" style="display:none;">
-        <div class="action-header">⚡ Detected Error Categories</div>
-        <div class="action-subtext">Click on any error box below to view its detailed action plan and resolution steps.</div>
-        <div id="errorGrid" class="error-grid"></div>
-    </div>
+    <!-- METRICS SUMMARY CARDS -->
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Processed Events</p>
+          <h4 id="statTotalEvents" class="text-2xl font-bold text-slate-800 mt-1">0</h4>
+        </div>
+        <div class="p-3 bg-blue-50 text-blue-600 rounded-xl bounce-tap">
+          <i data-lucide="layers" class="w-6 h-6"></i>
+        </div>
+      </div>
 
-    <!-- Day-by-Day Error Matrix Section -->
-    <div id="matrixSection" class="matrix-container" style="display:none;">
-        <div class="action-header">📅 Day-by-Day Error & Issue Matrix</div>
-        <div class="action-subtext">Breakdown of error occurrence frequencies across individual days.</div>
-        <div id="matrixTableWrapper"></div>
-    </div>
+      <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Hardware Code Errors</p>
+          <h4 id="statCodeErrors" class="text-2xl font-bold text-indigo-600 mt-1">0</h4>
+        </div>
+        <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl bounce-tap">
+          <i data-lucide="cpu" class="w-6 h-6"></i>
+        </div>
+      </div>
 
-    <!-- Interactive Action Popup Modal -->
-    <div id="actionModal" class="modal-overlay" onclick="closeModal(event, 'actionModal')">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div>
-                    <div id="modalTitle" class="modal-title">Error Details</div>
-                    <div id="modalCount" style="font-size: 12px; color: var(--text-sub); margin-top: 4px;">0 Hits</div>
-                </div>
-                <button class="close-btn" onclick="hideModal('actionModal')">✖</button>
-            </div>
-            <div class="modal-body">
-                <div class="action-label">🛠️ Recommended Action Plan</div>
-                <div id="modalActionText" class="action-text"></div>
-            </div>
-        </div>
-    </div>
+      <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Keyword Failures</p>
+          <h4 id="statKeywordErrors" class="text-2xl font-bold text-rose-600 mt-1">0</h4>
+        </div>
+        <div class="p-3 bg-rose-50 text-rose-600 rounded-xl bounce-tap">
+          <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+        </div>
+      </div>
 
-    <!-- QR Code Scanner Modal Overlay -->
-    <div id="qrModal" class="modal-overlay" onclick="closeModal(event, 'qrModal')">
-        <div class="modal-content" style="max-width: 450px;">
-            <div class="modal-header">
-                <div>
-                    <div class="modal-title">Scan QR Code for EJ Logs</div>
-                    <div style="font-size: 12px; color: var(--text-sub); margin-top: 4px;">Point camera at QR code containing EJ ZIP link</div>
-                </div>
-                <button class="close-btn" onclick="stopQrScanner()">✖</button>
-            </div>
-            <div class="modal-body">
-                <div id="qr-reader"></div>
-            </div>
-        </div>
-    </div>
+      <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Dispenser Category Hits</p>
+          <h4 id="statDispenserErrors" class="text-2xl font-bold text-amber-600 mt-1">0</h4>
+        </div>
+        <div class="p-3 bg-amber-50 text-amber-600 rounded-xl bounce-tap">
+          <i data-lucide="banknote" class="w-6 h-6"></i>
+        </div>
+      </div>
+    </section>
 
-    <script>
-        // Official Error Code Descriptions
-        const CODES = {
-            "01": "DISPENSED SUCCESSFULLY",
-            "02": "NO NOTES DISPENSED",
-            "03": "SENSOR FAILURE",
-            "04": "MAX TWIN LIMIT EXCEEDED",
-            "05": "PRESENTED SUCCESSFULLY",
-            "06": "PRESENTATION TRAY NOT HOMED",
-            "07": "BULK PURGE SUCCESSFUL",
-            "08": "MOTOR TIMEOUT NOT HOMED",
-            "09": "DISPENSER INITIALIZED",
-            "10": "DISPENSER NOT INITIALIZED",
-            "11": "CASH JAM",
-            "12": "NO CASH ON TRAY",
-            "13": "SUSPECT CASH PICKED UP",
-            "14": "CASH JAM NOT HOMED",
-            "15": "CASSETTE NOT ENABLED",
-            "16": "NOTE LIMIT EXCEEDED",
-            "17": "NOTE THRESHOLD NOT SET",
-            "18": "DRIFT ERROR",
-            "20": "CALIBRATION NOT DONE",
-            "24": "CASSETTE TYPE SENSOR FAILURE",
-            "25": "FLASH ERROR",
-            "40": "SAFE SHUTTER OPEN FAILS",
-            "41": "SAFE SHUTTER CLOSE FAILS",
-            "42": "CARTRIDGE POSITION ERROR",
-            "43": "CAM POSITION ERROR",
-            "44": "PURGE BIN NOT INSERTED",
-            "45": "CASSETTE INSERTION PROBLEM",
-            "53": "CART COMM ERROR",
-            "73": "DOOR OPEN IDENTIFIED",
-            "84": "I2C COMM ERROR",
-            "85": "LED FAILURE",
-            "99": "UNKNOWN ERROR"
-        };
+    <!-- DASHBOARD CONTENT GRID -->
+    <div id="analyticsSection" class="space-y-6">
 
-        // TARGET KEYWORDS INCLUDING SWITCH CONN FAILURE
-        const TARGET_KEYWORDS = [
-            "Command Reject",
-            "SWITCH CONN FAILURE",
-            "APP LEVEL ERROR",
-            "ATR ERROR",
-            "DISPENSER FAILURE (11:NO NOTES DISPENSED)",
-            "PIN ENCRYPTION FAILURE",
-            "E*2",
-            "Power Cycle",
-            "SUSPECT"
-        ];
+      <!-- TOP ERROR CODES SUMMARY (SORTED HIGH TO LOW) -->
+      <section class="aesthetic-card rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+              <i data-lucide="trending-up" class="w-5 h-5 text-indigo-600"></i>
+              Most Frequent Failures & Error Codes (Sorted Highest to Lowest)
+            </h2>
+            <p class="text-xs text-slate-500">Click any card box to view failure details & recommended technical action points.</p>
+          </div>
+          <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full" id="errorTypeCount">0 Active Errors</span>
+        </div>
 
-        // Centralized Master Action Guide
-        const ACTION_SOLUTIONS = {
-            "SWITCH CONN FAILURE": "Check network switch power, LAN cabling, switch port connectivity, and host gateway IP configuration.",
-            "CASH JAM": "Inspect transport belts, cash paths, sensors for torn notes, and clear physical jams.",
-            "APP LEVEL ERROR": "Restart Application services, verify ATM application configs, check system logs.",
-            "ATR ERROR": "Inspect Smart Card / Dip Reader module, clean contacts, test card driver interface.",
-            "SUSPECT": "Examine suspect notes bin, test sensor calibration, check note validation module.",
-            "FAILURE": "Check general peripheral hardware connections, power supply state, and driver connectivity.",
-            "SENSOR FAILURE": "Clean optical sensors, inspect harness wiring, and perform sensor test.",
-            "MOTOR TIMEOUT": "Check motor gearing mechanism, mechanical blockage, and power board supply.",
-            "I2C COMM ERROR": "Re-seat internal communication ribbon cables, check motherboard controller connection."
-        };
+        <!-- ERROR BOXES GRID -->
+        <div id="errorGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <!-- Placeholder State -->
+          <div class="col-span-full text-center py-12 text-slate-400">
+            <i data-lucide="file-search" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+            <p class="text-sm">No log data analyzed yet. Upload files or load demo logs to view failure counts.</p>
+          </div>
+        </div>
+      </section>
 
-        let aggregatedHits = [];
-        let categoryTotals = {};
-        let dayMatrix = {};
-        let uniqueDates = new Set();
-        let html5QrCode = null;
+      <!-- TWO COLUMN LAYOUT FOR CHART & KEYWORDS -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        async function handleFileSelection(input) {
-            const files = input.files;
-            if (!files.length) return;
+        <!-- KEYWORD & DISPENSER CATEGORIES -->
+        <div class="lg:col-span-1 space-y-6">
+          
+          <!-- KEYWORD FAILURES BOX -->
+          <div class="aesthetic-card rounded-2xl p-5">
+            <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+              <i data-lucide="key" class="w-4 h-4 text-rose-500"></i>
+              Monitored Keyword Failures
+            </h3>
+            <div id="keywordList" class="space-y-2">
+              <!-- Dynamically Populated -->
+              <div class="text-xs text-slate-400 italic">No failures detected</div>
+            </div>
+          </div>
 
-            resetState();
-            document.getElementById('status').innerText = "Analyzing log files...";
+          <!-- DISPENSER CATEGORY BOX -->
+          <div class="aesthetic-card rounded-2xl p-5">
+            <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+              <i data-lucide="box" class="w-4 h-4 text-amber-500"></i>
+              Dispenser Category Breakdown
+            </h3>
+            <div id="dispenserCategoryList" class="space-y-2">
+              <!-- Dynamically Populated -->
+              <div class="text-xs text-slate-400 italic">No dispenser category events detected</div>
+            </div>
+          </div>
 
-            let totalFiles = 0;
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                if (file.name.endsWith('.zip')) {
-                    totalFiles += await processZipFile(file);
-                } else {
-                    const text = await file.text();
-                    parseLogContent(file.name, text);
-                    totalFiles += 1;
-                }
-            }
+        </div>
 
-            finishProcessing(totalFiles);
-        }
+        <!-- DAY BY DAY TREND CHART -->
+        <div class="lg:col-span-2 aesthetic-card rounded-2xl p-5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <i data-lucide="calendar" class="w-4 h-4 text-indigo-500"></i>
+              Daily Failure Trend Analysis
+            </h3>
+            <span class="text-xs text-slate-400">Hits per Calendar Day</span>
+          </div>
+          <div class="relative w-full h-64 flex-1">
+            <canvas id="dailyChart"></canvas>
+          </div>
+        </div>
 
-        async function processZipFile(zipFile) {
-            let processed = 0;
-            try {
-                const zip = new JSZip();
-                const unzipped = await zip.loadAsync(zipFile);
-                for (let filename in unzipped.files) {
-                    const zipEntry = unzipped.files[filename];
-                    if (!zipEntry.dir && (filename.endsWith('.log') || filename.endsWith('.txt') || !filename.includes('.'))) {
-                        const content = await zipEntry.async("string");
-                        parseLogContent(zipEntry.name, content);
-                        processed++;
-                    }
-                }
-            } catch (err) {
-                alert("Error unzipping file: " + err.message);
-            }
-            return processed;
-        }
+      </div>
 
-        /* QR Scanner Logic */
-        function startQrScanner() {
-            document.getElementById('qrModal').style.display = 'flex';
-            
-            if (!html5QrCode) {
-                html5QrCode = new Html5Qrcode("qr-reader");
-            }
+      <!-- DAY BY DAY DATA TABLE -->
+      <section class="aesthetic-card rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+            <i data-lucide="table" class="w-5 h-5 text-indigo-600"></i>
+            Day-by-Day Error & Hit Breakdown Table
+          </h2>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-slate-600">
+            <thead class="bg-slate-100 text-slate-700 text-xs uppercase font-semibold">
+              <tr>
+                <th class="px-4 py-3 rounded-l-lg">Date</th>
+                <th class="px-4 py-3">Hardware Code Errors</th>
+                <th class="px-4 py-3">Keyword Failures</th>
+                <th class="px-4 py-3">Dispenser Errors</th>
+                <th class="px-4 py-3 text-right rounded-r-lg">Total Daily Hits</th>
+              </tr>
+            </thead>
+            <tbody id="dailyTableBody" class="divide-y divide-slate-100">
+              <tr>
+                <td colspan="5" class="text-center py-6 text-xs text-slate-400">Upload log files to see day-by-day distribution.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-            html5QrCode.start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: { width: 250, height: 250 } },
-                async (decodedText) => {
-                    stopQrScanner();
-                    await fetchAndProcessQrZip(decodedText);
-                },
-                (errorMessage) => {
-                    // Ignore transient scanning errors
-                }
-            ).catch(err => {
-                alert("Unable to access camera: " + err);
-                stopQrScanner();
-            });
-        }
+    </div>
 
-        function stopQrScanner() {
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => {
-                    document.getElementById('qrModal').style.display = 'none';
-                }).catch(() => {
-                    document.getElementById('qrModal').style.display = 'none';
-                });
-            } else {
-                document.getElementById('qrModal').style.display = 'none';
-            }
-        }
+  </main>
 
-        async function fetchAndProcessQrZip(url) {
-            try {
-                document.getElementById('status').innerText = `Fetching EJ Logs from scanned QR link: ${url}...`;
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`HTTP ${response.status} - Failed to fetch ZIP`);
-                
-                const blob = await response.blob();
-                resetState();
+  <!-- ACTION POINTS MODAL -->
+  <div id="actionModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-100 transform transition-all scale-95 opacity-0" id="modalContent">
+      <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center space-x-3">
+          <div id="modalIconContainer" class="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 bounce-tap">
+            <i data-lucide="wrench" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <span id="modalCodeBadge" class="text-xs font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">CODE 00</span>
+            <h3 id="modalTitle" class="text-base font-bold text-slate-900 mt-0.5">Error Description</h3>
+          </div>
+        </div>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors bounce-tap">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
 
-                const totalFiles = await processZipFile(blob);
-                finishProcessing(totalFiles);
-            } catch (err) {
-                document.getElementById('status').innerText = "QR Fetch Failed. Ensure link is a valid CORS-enabled direct ZIP URL.";
-                alert("Failed to process QR Code URL: " + err.message);
-            }
-        }
+      <div class="space-y-3">
+        <div class="flex items-center justify-between text-xs bg-slate-50 p-3 rounded-lg border border-slate-100">
+          <span class="text-slate-500 font-medium">Occurrences in Logs:</span>
+          <span id="modalHits" class="font-bold text-indigo-600 text-sm">0 Hits</span>
+        </div>
 
-        function resetState() {
-            aggregatedHits = [];
-            categoryTotals = {};
-            dayMatrix = {};
-            uniqueDates.clear();
-        }
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>
+            Recommended Action Points
+          </h4>
+          <ul id="modalActionsList" class="space-y-2 text-xs text-slate-600">
+            <!-- Dynamic Actions -->
+          </ul>
+        </div>
+      </div>
 
-        function finishProcessing(totalFiles) {
-            renderDashboard(totalFiles);
-            document.getElementById('status').innerText = `Completed processing ${totalFiles} file(s). Found ${aggregatedHits.length} total hits.`;
-            
-            const downloadBtn = document.getElementById('downloadBtn');
-            if (aggregatedHits.length > 0) {
-                downloadBtn.removeAttribute('disabled');
-            } else {
-                downloadBtn.setAttribute('disabled', 'true');
-            }
-        }
+      <div class="pt-2 flex justify-end">
+        <button onclick="closeModal()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-4 py-2 rounded-lg bounce-tap transition-all">
+          Close Diagnostics
+        </button>
+      </div>
+    </div>
+  </div>
 
-        function parseLogContent(filename, text) {
-            const lines = text.split('\n');
-            let currentDate = "Unknown Date";
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-200 py-4 mt-8">
+    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+      ATM Log Intelligence & Failure Diagnostics Engine • Client-Side Processing • Professional Edition
+    </div>
+  </footer>
 
-            const filenameDateMatch = filename.match(/\b(\d{4}[_\-]\d{2}[_\-]\d{2}|\d{2}[_\-]\d{4})\b/);
-            if (filenameDateMatch) {
-                currentDate = filenameDateMatch[0].replace(/_/g, '-');
-            }
+  <!-- APPLICATION JAVASCRIPT LOGIC -->
+  <script>
+    // -------------------------------------------------------------
+    // 1. MASTER ERROR CODES & ACTION POINTS MAPPING
+    // -------------------------------------------------------------
+    const ERROR_MAP = {
+      1: { name: "DISPENSED SUCCESSFULLY", category: "Success", action: "Normal Operation. No technical intervention required." },
+      2: { name: "MOTOR TIMEOUT", category: "Hardware", action: "Check dispenser motor power connection. Inspect motor belts/gears for physical jam or wear." },
+      3: { name: "SENSOR FAILURE", category: "Hardware", action: "Clean sensor lenses with isopropyl alcohol. Inspect ribbon cables for continuity." },
+      4: { name: "MAX TWIN LIMIT EXCEEDED", category: "Cash Operations", action: "Calibrate double-note/twin sensor. Inspect note thickness parameter and note fitness quality." },
+      5: { name: "PRESENTED SUCCESSFULLY", category: "Success", action: "Normal Operation. Cash successfully picked by customer." },
+      6: { name: "PRESENTATION TRAY NOT HOMED", category: "Mechanical", action: "Inspect presentation tray home sensor. Verify mechanism isn't blocked by debris or crumpled notes." },
+      7: { name: "BULK PURGE SUCCESSFULL", category: "Success", action: "Normal Operation. Cash purged into purge bin." },
+      8: { name: "MOTOR TIMEOUT NOT HOMED", category: "Hardware", action: "Check motor position home sensor. Check gear timing and motor driver board." },
+      9: { name: "DISPENSER INITIALIZED", category: "Info", action: "Normal Operation. Dispenser state ready." },
+      10: { name: "DISPENSER NOT INITIALIZED", category: "Configuration", action: "Trigger re-initialization command from ATM terminal application. Verify firmware state." },
+      11: { name: "CASH JAM", category: "Critical Cash Jam", action: "Clear note transport path manually. Inspect transport belts and divert shafts." },
+      12: { name: "NO CASH ON TRAY", category: "Cash Operations", action: "Check if notes failed to transport from cassette to presenter. Verify pick module belts." },
+      13: { name: "SUSPECT CASH PICKEDUP", category: "Cash Operations", action: "Inspect suspect note bin. Verify optical sensors for thickness/width validation calibration." },
+      14: { name: "CASH JAM NOT HOMED", category: "Critical Cash Jam", action: "Clear physical jam in presenter/transport path and reset clamp home position sensor." },
+      15: { name: "CASSETTE NOT ENABLED", category: "Configuration", action: "Check cassette configuration status in supervisor menu. Enable cassette channel." },
+      16: { name: "NO NOTE LIMIT EXCEEDED", category: "Cash Operations", action: "Replenish currency notes in cassette. Reset bill count in ATM supervisor software." },
+      17: { name: "NOTE THRESHOLD NOT SET", category: "Configuration", action: "Perform currency calibration routine in supervisor mode to record note thickness profiles." },
+      18: { name: "DRIFT ERROR", category: "Sensors", action: "Recalibrate optical double-detect sensors. Dust/clean optics." },
+      19: { name: "CALIB PROFILE MATCH", category: "Info", action: "Normal Operation. Calibration profile matches currency specifications." },
+      20: { name: "CALIBRATION NOT DONE", category: "Configuration", action: "Run mandatory cassette currency calibration routine before restoring service." },
+      21: { name: "CALIB THRES SEL FAILED", category: "Configuration", action: "Re-run calibration using fresh, uncreased reference banknotes." },
+      22: { name: "PROFILE ITER LIMIT EXCEEDED", category: "Sensors", action: "Clean optical sensors. Check for ambient light leakage or optical obstruction." },
+      23: { name: "LESS SAMP ITR EXCEEDED", category: "Sensors", action: "Retry calibration with at least 20 sample banknotes in cassette." },
+      24: { name: "CASSETTE TYPE SENSOR FAILURE PULLUP PULLDOWN", category: "Hardware", action: "Check cassette microswitches/reed switches on backplane board." },
+      25: { name: "FLASH ERROR", category: "Firmware", action: "Re-flash dispenser control board firmware. Replace EEPROM if corrupt." },
+      26: { name: "COUNTING LEFT UPPER DRIFT", category: "Sensors", action: "Clean upper left optical count sensor emitter and detector." },
+      27: { name: "COUNTING LEFT LOWER DRIFT", category: "Sensors", action: "Clean lower left optical count sensor." },
+      28: { name: "COUNTING RIGHT UPPER DRIFT", category: "Sensors", action: "Clean upper right optical count sensor." },
+      29: { name: "COUNTING RIGHT LOWER DRIFT", category: "Sensors", action: "Clean lower right optical count sensor." },
+      30: { name: "REAR SKEW LEFT UPPER DRIFT", category: "Sensors", action: "Clean rear skew upper left sensor array." },
+      31: { name: "REAR SKEW LEFT LOWER DRIFT", category: "Sensors", action: "Clean rear skew lower left sensor array." },
+      32: { name: "REAR SKEW RIGHT UPPER DRIFT", category: "Sensors", action: "Clean rear skew upper right sensor array." },
+      33: { name: "REAR SKEW RIGHT LOWER DRIFT", category: "Sensors", action: "Clean rear skew lower right sensor array." },
+      34: { name: "PREV TRANS CASH IN TRAY", category: "Cash Operations", action: "Check if customer left cash or if tray sensor is dirty/blocked." },
+      35: { name: "DISP INIT SUCCESS PREV CASH BP SUCCESS", category: "Info", action: "Purged forgotten cash to bulk bin during boot. Ready for use." },
+      36: { name: "DISP INIT FAIL PREV CASH BP SUCCESS", category: "Hardware", action: "Dispenser initialization failed after purging previous cash. Re-initialize." },
+      37: { name: "DISP INIT FAIL PREV CASH BP FAIL", category: "Critical Cash Jam", action: "Physical blockage in presenter. Inspect bulk purge path and clear jammed bills." },
+      38: { name: "PREV TRANS CASH TAKEN", category: "Info", action: "Normal Operation. Cash taken by user." },
+      39: { name: "CARTRIDGE HOMED", category: "Info", action: "Normal Operation." },
+      40: { name: "SAFE SHUTTER OPEN FAILS", category: "Hardware", action: "Inspect shutter motor drive solenoid and physical shutter guide rails." },
+      41: { name: "SAFE SHUTTER CLOSE FAILS", category: "Hardware", action: "Check for obstruction in exit shutter area or optical safety light curtain." },
+      42: { name: "CARTRIDGE POSITION ERROR", category: "Hardware", action: "Verify cassette seating and lock latch mechanism in dispenser bay." },
+      43: { name: "CAM POSITION ERROR", category: "Mechanical", action: "Inspect mechanical cam home position sensor and gear alignment." },
+      44: { name: "PURGE BIN NOT INSERTED", category: "Hardware", action: "Ensure purge/reject container is fully inserted and microswitch engaged." },
+      45: { name: "CASSETTE INSERTION PROBLEM", category: "Hardware", action: "Re-seat cassette properly. Check guide tracks for damage." },
+      46: { name: "TWIN SENSOR NOISE UPPER DRIFT", category: "Sensors", action: "Inspect twin/double detector circuitry for electrical noise/interference." },
+      47: { name: "BILL MOVE TO PRESENTER FAIL", category: "Transport", action: "Inspect feed rollers and divert solenoid for slipping or note jams." },
+      48: { name: "PURGEBIN LID CONFIG MIS MATCH", category: "Configuration", action: "Check dip switches or supervisor configuration for purge bin lock sensor." },
+      49: { name: "RETRACT CLR BEFORE PRESENT BLK", category: "Transport", action: "Perform retract clearance cycle before executing presentation." },
+      50: { name: "TOTAL NOTE COUNT OUTOF RANGE", category: "Configuration", action: "Verify max note dispense bundle limit in host parameters (usually max 40 notes)." },
+      51: { name: "NOTE WIDTH OUTOF RANGE", category: "Sensors", action: "Check note size guide guides in cassette. Verify note dimension parameters." },
+      52: { name: "CART IN SBL APP", category: "Info", action: "Cartridge in single bill loading application state." },
+      53: { name: "CART COMM ERROR", category: "Communication", action: "Check internal RS232/USB/I2C harness connection to cassette controller." },
+      54: { name: "CASSETTE TYPE SENSOR FAILURE COMBINATION", category: "Hardware", action: "Replace/check cassette size detection microswitch assembly." },
+      55: { name: "INTER CASSETTE MOVE ERROR", category: "Transport", action: "Inspect vertical note transport path between upper and lower cassettes." },
+      56: { name: "CALIB CASSETTE TYPE MISMATCH", category: "Configuration", action: "Ensure cassette denomination matches configured profile." },
+      57: { name: "CARTRIDGE FWF UPDATE SUCCESS", category: "Info", action: "Firmware update applied." },
+      58: { name: "CARTRIDGE DATA SENT FAIL", category: "Communication", action: "Retry data sync with cartridge chip." },
+      59: { name: "CARTRIDGE DATA RECEV FAIL", category: "Communication", action: "Inspect contact pins on cassette connector." },
+      60: { name: "CARTRIDGE INVALID DATA RECEIVED", category: "Communication", action: "Re-seat cassette or reset cartridge memory." },
+      61: { name: "CARTRIDGE DATA SENT SUCCESS", category: "Info", action: "Communication success." },
+      62: { name: "CARTRIDGE CHECKSUM FAIL", category: "Firmware", action: "Re-write cassette memory parameters." },
+      63: { name: "MAX PEEP PURGE LIMIT EXCEED", category: "Cash Operations", action: "Purge bin reached maximum capacity limit. Empty reject bin and reset counter." },
+      64: { name: "PURGE BIN LID OPEN FAIL", category: "Hardware", action: "Check purge bin lid lock actuator." },
+      65: { name: "PURGE BIN LID CLOSE FAIL", category: "Hardware", action: "Inspect lid spring and latch sensor." },
+      66: { name: "ACK RX FAIL FOR SHUTTER OPEN", category: "Communication", action: "Check shutter board communications harness." },
+      67: { name: "COMMAND VERSION MISMATCH", category: "Firmware", action: "Update dispenser firmware or terminal software driver to matching version." },
+      68: { name: "CCM VER UNSUPPORT MISMATCH", category: "Firmware", action: "Incompatible board controller firmware detected. Update firmware." },
+      69: { name: "FID A CARD REMOVE TIMEOUT", category: "Card Reader", action: "Check card reader bezel and power supply." },
+      70: { name: "NOT IN SESSION", category: "System State", action: "Restart terminal session software." },
+      71: { name: "PAIRING REQUEST EXHAUSTED", category: "Communication", action: "Re-pair security board with dispenser logic controller." },
+      72: { name: "SESSION DETAILS MISMATCH", category: "System State", action: "Clear local cache and restart ATM host communication driver." },
+      73: { name: "DOOR OPEN IDENTIFIED", category: "Security", action: "Verify safe/cabinet door interlock switch." },
+      74: { name: "NO CASH ON TRAY - PRESENT BLOCK BEFORE CASH PRESENT", category: "Transport", action: "Check pick module belt mechanism. Verify notes reached presenter prior to presentation." },
+      75: { name: "NO CASH ON TRAY - RETRACT CLEAR BEFORE CASH PRESENT", category: "Transport", action: "Inspect note retract path for early dropped bills." },
+      76: { name: "CAM FIND HOME TO", category: "Mechanical Timeout", action: "Check CAM motor assembly for binding or failure to find home sensor." },
+      77: { name: "CAM DISPENSE TO CLAMP TO", category: "Mechanical Timeout", action: "Inspect clamp transport timing and cam drive gears." },
+      78: { name: "CAM CLAMP TO PRESENT TO", category: "Mechanical Timeout", action: "Check presenter drive belt and clamp shaft mechanism." },
+      79: { name: "CAM PRESENT TO BP TO", category: "Mechanical Timeout", action: "Check transport path from presenter to bulk purge container." },
+      80: { name: "CAM DISPENSE TO PURGE TO", category: "Mechanical Timeout", action: "Inspect purge divert shaft and cam actuation." },
+      81: { name: "CAM BP TO DISPENSE TO", category: "Mechanical Timeout", action: "Check return stroke mechanism on CAM system." },
+      82: { name: "CART FIND HOME TO", category: "Mechanical Timeout", action: "Check cartridge home positioning sensor and motor." },
+      83: { name: "CART C2P TO (cassette to present)", category: "Mechanical Timeout", action: "Notes taking too long from cassette to presenter. Check rollers for wear/slipping." },
+      84: { name: "I2C COMM ERROR (DLDR)", category: "Hardware/Communication", action: "Replace or re-seat internal I2C bus ribbon cable on logic board." },
+      85: { name: "LED FAILURE (DLDR)", category: "Hardware", action: "Check or replace indicator light board / optical LED set." },
+      86: { name: "CART P2BP TO (Present to Bulk purge)", category: "Mechanical Timeout", action: "Inspect presenter to bulk purge chute for paper jams or mechanical friction." },
+      97: { name: "REQ NOT REACHED TO CDM", category: "Communication", action: "Check CDM board serial/USB connection to main ATM PC unit." },
+      99: { name: "UNKNOWN ERROR", category: "System Unhandled", action: "Gather full trace logs and consult hardware manufacturer engineering support." }
+    };
 
-            lines.forEach(line => {
-                const rawLine = line.trim();
-                if (!rawLine) return;
+    // -------------------------------------------------------------
+    // 2. MONITORED KEYWORDS & DISPENSER PATTERNS
+    // -------------------------------------------------------------
+    const KEYWORD_TARGETS = [
+      "Switch conn failure",
+      "app level error",
+      "ATR error",
+      "suspect-1",
+      "suspect-2",
+      "pin encryption failure",
+      "switch resp-timeout",
+      "command reject"
+    ];
 
-                const lineUpper = rawLine.toUpperCase();
+    // Regular Expression to parse DISPENSER FAILURE patterns like:
+    // DISPENSER FAILURE (02:NO NOTES DISPENSED) or DISPENSER FAILURE (02) or DISPENSER FAILURE (11:CASH JAM)
+    const DISPENSER_FAILURE_REGEX = /DISPENSER\s+FAILURE\s*\(([^)]+)\)/gi;
 
-                // Date detection
-                const inlineDateMatch = rawLine.match(/(?:DATE\s*:\s*|DATE\s+)(\d{2}[\/\.-]\d{2}[\/\.-]\d{2,4})|\b(\d{4}[\/\.-]\d{2}[\/\.-]\d{2}|\d{2}[\/\.-]\d{2}[\/\.-]\d{4})\b/i);
-                if (inlineDateMatch) {
-                    currentDate = inlineDateMatch[1] || inlineDateMatch[2];
-                }
+    // Standard log date extractor regex (e.g., 2026-10-17 or 17/10/2026 or Oct 17 2026)
+    const DATE_REGEX = /(\d{4}[-/.]\d{2}[-/.]\d{2}|\d{2}[-/.]\d{2}[-/.]\d{4})/;
 
-                // Strip timestamps to avoid matching hours/minutes as code numbers
-                let sanitizedLine = lineUpper.replace(/\b\d{2}:\d{2}:\d{2}(?::\d{2,3})?\b/g, '');
+    // Global Data Store
+    let analysisData = {
+      totalEvents: 0,
+      codeErrors: {},     // Code -> Count
+      keywordErrors: {},  // Keyword -> Count
+      dispenserErrors: {},// Code/Description -> Count
+      dailyTrend: {},     // DateString -> { total, codes, keywords, dispenser }
+      detailedRecords: [] // Array of parsed records for excel export
+    };
 
-                // Check for explicit error codes like (11:...) or [11] or CODE: 11
-                const explicitCodeMatch = sanitizedLine.match(/\((\d{2})\s*[:\-]\s*([^\)]+)\)/) || 
-                                           sanitizedLine.match(/CODE\s*[:\-]?\s*(\d{2})/i) ||
-                                           sanitizedLine.match(/\[(\d{2})\]/);
+    let dailyChartInstance = null;
 
-                let matchedCode = null;
-                let matchedDesc = null;
+    // Initialize UI on DOM Ready
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+      initChart();
+    });
 
-                if (explicitCodeMatch) {
-                    matchedCode = explicitCodeMatch[1];
-                    matchedDesc = explicitCodeMatch[2] ? explicitCodeMatch[2].trim() : CODES[matchedCode];
-                }
+    // -------------------------------------------------------------
+    // 3. LOG PARSING & PROCESSING ENGINE
+    // -------------------------------------------------------------
+    async function handleFileUpload(event) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
 
-                // Check for requested target keywords
-                let foundKeyword = null;
-                TARGET_KEYWORDS.forEach(kw => {
-                    if (sanitizedLine.includes(kw)) {
-                        foundKeyword = kw;
-                    }
-                });
+      showProcessing(true, "Reading uploaded log file(s)...");
+      resetDataStore();
 
-                if (matchedCode || foundKeyword) {
-                    let unifiedLabel = "";
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.name.endsWith(".zip")) {
+          await processZipFile(file);
+        } else {
+          const content = await readFileAsText(file);
+          processLogContent(content, file.name);
+        }
+      }
 
-                    if (matchedCode) {
-                        const codeName = CODES[matchedCode] || matchedDesc || "UNKNOWN ERROR";
-                        unifiedLabel = `Code ${matchedCode} (${codeName})`;
-                    } else {
-                        unifiedLabel = foundKeyword;
-                    }
+      showProcessing(false);
+      renderDashboard();
+    }
 
-                    uniqueDates.add(currentDate);
+    function readFileAsText(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = (e) => reject(e);
+        reader.readAsText(file);
+      });
+    }
 
-                    // Count overall totals per category
-                    categoryTotals[unifiedLabel] = (categoryTotals[unifiedLabel] || 0) + 1;
+    async function processZipFile(zipFile) {
+      try {
+        const zip = new JSZip();
+        const unzipped = await zip.loadAsync(zipFile);
+        for (const filename of Object.keys(unzipped.files)) {
+          if (!unzipped.files[filename].dir && (filename.endsWith('.log') || filename.endsWith('.txt'))) {
+            const content = await unzipped.files[filename].async("text");
+            processLogContent(content, filename);
+          }
+        }
+      } catch (err) {
+        console.error("ZIP extract error:", err);
+        alert("Failed to unzip or read archive file: " + zipFile.name);
+      }
+    }
 
-                    // Populate Day Matrix
-                    if (!dayMatrix[currentDate]) dayMatrix[currentDate] = {};
-                    dayMatrix[currentDate][unifiedLabel] = (dayMatrix[currentDate][unifiedLabel] || 0) + 1;
+    function resetDataStore() {
+      analysisData = {
+        totalEvents: 0,
+        codeErrors: {},
+        keywordErrors: {},
+        dispenserErrors: {},
+        dailyTrend: {},
+        detailedRecords: []
+      };
+    }
 
-                    aggregatedHits.push({
-                        file: filename,
-                        date: currentDate,
-                        keyword: unifiedLabel,
-                        raw: rawLine
-                    });
-                }
-            });
-        }
+    function processLogContent(text, fileName) {
+      const lines = text.split(/\r?\n/);
+      
+      lines.forEach((line) => {
+        if (!line.trim()) return;
 
-        function renderDashboard(fileCount) {
-            document.getElementById('kpiFiles').innerText = fileCount;
-            document.getElementById('kpiHits').innerText = aggregatedHits.length;
-            document.getElementById('kpiDates').innerText = uniqueDates.size;
+        // Extract Date if present
+        const dateMatch = line.match(DATE_REGEX);
+        const dateStr = dateMatch ? normalizeDate(dateMatch[1]) : "Unknown Date";
 
-            document.getElementById('kpiSection').style.display = 'grid';
-            document.getElementById('actionSummarySection').style.display = 'block';
-            document.getElementById('matrixSection').style.display = 'block';
+        let matchedAny = false;
 
-            // Render Error Category Boxes
-            let errorGridHtml = '';
-            for (let label in categoryTotals) {
-                let count = categoryTotals[label];
+        // A. CHECK FOR ERROR CODES (Numeric Code Matches or Text Descriptions)
+        for (const [codeNum, info] of Object.entries(ERROR_MAP)) {
+          // Check for code pattern like Code 02 or Error 2 or exact description
+          const codeRegex = new RegExp(`\\b(code|err|error)?\\s*[:\\-]?\\s*0*${codeNum}\\b|${escapeRegExp(info.name)}`, 'i');
+          if (codeRegex.test(line)) {
+            analysisData.codeErrors[codeNum] = (analysisData.codeErrors[codeNum] || 0) + 1;
+            matchedAny = true;
 
-                errorGridHtml += `
-                    <div class="error-card" onclick="showActionModal('${encodeURIComponent(label)}')">
-                        <div class="error-card-title">${label}</div>
-                        <span class="badge">${count} Hits</span>
-                    </div>`;
-            }
-            document.getElementById('errorGrid').innerHTML = errorGridHtml;
+            recordEvent(dateStr, 'code', codeNum, info.name, line);
+          }
+        }
 
-            // Render Matrix Table
-            renderMatrixTable();
-        }
+        // B. CHECK FOR MONITORED KEYWORDS
+        KEYWORD_TARGETS.forEach(keyword => {
+          if (line.toLowerCase().includes(keyword.toLowerCase())) {
+            analysisData.keywordErrors[keyword] = (analysisData.keywordErrors[keyword] || 0) + 1;
+            matchedAny = true;
 
-        function renderMatrixTable() {
-            const sortedDates = Array.from(uniqueDates).sort();
-            const categories = Object.keys(categoryTotals);
+            recordEvent(dateStr, 'keyword', keyword, keyword, line);
+          }
+        });
 
-            if (sortedDates.length === 0 || categories.length === 0) return;
+        // C. CHECK FOR DISPENSER FAILURE CATEGORIES (02:NO NOTES DISPENSED, etc.)
+        let dispMatch;
+        DISPENSER_FAILURE_REGEX.lastIndex = 0; // reset regex state
+        while ((dispMatch = DISPENSER_FAILURE_REGEX.exec(line)) !== null) {
+          const categoryText = dispMatch[1].trim(); // e.g., "02:NO NOTES DISPENSED"
+          analysisData.dispenserErrors[categoryText] = (analysisData.dispenserErrors[categoryText] || 0) + 1;
+          matchedAny = true;
 
-            let tableHtml = `<table class="matrix-table"><thead><tr><th>Error / Issue Category</th>`;
-            
-            sortedDates.forEach(date => {
-                tableHtml += `<th>${date}</th>`;
-            });
-            tableHtml += `<th>Total</th></tr></thead><tbody>`;
+          recordEvent(dateStr, 'dispenser', categoryText, categoryText, line);
+        }
 
-            categories.forEach(cat => {
-                tableHtml += `<tr><td><b>${cat}</b></td>`;
-                let rowTotal = 0;
-                sortedDates.forEach(date => {
-                    const count = (dayMatrix[date] && dayMatrix[date][cat]) ? dayMatrix[date][cat] : 0;
-                    rowTotal += count;
-                    tableHtml += `<td>${count > 0 ? `<b style="color:var(--accent-red);">${count}</b>` : '-'}</td>`;
-                });
-                tableHtml += `<td><b style="color:var(--accent-blue);">${rowTotal}</b></td></tr>`;
-            });
+        if (matchedAny) {
+          analysisData.totalEvents++;
+        }
+      });
+    }
 
-            tableHtml += `</tbody></table>`;
-            document.getElementById('matrixTableWrapper').innerHTML = tableHtml;
-        }
+    function recordEvent(dateStr, type, key, title, line) {
+      // Daily Trend Tracking
+      if (!analysisData.dailyTrend[dateStr]) {
+        analysisData.dailyTrend[dateStr] = { total: 0, code: 0, keyword: 0, dispenser: 0 };
+      }
+      analysisData.dailyTrend[dateStr].total++;
+      analysisData.dailyTrend[dateStr][type]++;
 
-        function showActionModal(encodedLabel) {
-            const label = decodeURIComponent(encodedLabel);
-            const count = categoryTotals[label] || 0;
-            
-            let recommendation = "Perform diagnostic evaluation on module.";
-            for (let key in ACTION_SOLUTIONS) {
-                if (label.includes(key)) {
-                    recommendation = ACTION_SOLUTIONS[key];
-                    break;
-                }
-            }
+      // Store Detailed Log Record for Excel Export
+      analysisData.detailedRecords.push({
+        Date: dateStr,
+        Type: type.toUpperCase(),
+        Key: key,
+        Description: title,
+        RawLogSnippet: line.trim()
+      });
+    }
 
-            document.getElementById('modalTitle').innerText = label;
-            document.getElementById('modalCount').innerText = `${count} Total Incident(s)`;
-            document.getElementById('modalActionText').innerText = recommendation;
-            document.getElementById('actionModal').style.display = 'flex';
-        }
+    function normalizeDate(dStr) {
+      try {
+        const d = new Date(dStr);
+        if (!isNaN(d.getTime())) {
+          return d.toISOString().split('T')[0];
+        }
+      } catch (e) {}
+      return dStr;
+    }
 
-        function hideModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
+    function escapeRegExp(string) {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
 
-        function closeModal(event, modalId) {
-            if (event.target.classList.contains('modal-overlay')) {
-                hideModal(modalId);
-            }
-        }
+    // -------------------------------------------------------------
+    // 4. DASHBOARD RENDER & INTERACTIVE UI
+    // -------------------------------------------------------------
+    function renderDashboard() {
+      // 1. Update Metrics Cards
+      document.getElementById("statTotalEvents").innerText = analysisData.totalEvents.toLocaleString();
+      
+      const totalCodeHits = Object.values(analysisData.codeErrors).reduce((a, b) => a + b, 0);
+      const totalKeywordHits = Object.values(analysisData.keywordErrors).reduce((a, b) => a + b, 0);
+      const totalDispenserHits = Object.values(analysisData.dispenserErrors).reduce((a, b) => a + b, 0);
 
-        function exportToExcel() {
-            if (!aggregatedHits.length) return;
+      document.getElementById("statCodeErrors").innerText = totalCodeHits.toLocaleString();
+      document.getElementById("statKeywordErrors").innerText = totalKeywordHits.toLocaleString();
+      document.getElementById("statDispenserErrors").innerText = totalDispenserHits.toLocaleString();
 
-            const wb = XLSX.utils.book_new();
+      // Show Excel Button if data exists
+      if (analysisData.totalEvents > 0) {
+        document.getElementById("exportExcelBtn").classList.remove("hidden");
+      }
 
-            // 1. Matrix Sheet
-            const sortedDates = Array.from(uniqueDates).sort();
-            const categories = Object.keys(categoryTotals);
-            const matrixRows = [];
+      // 2. Render Error Grid (SORTED FROM HIGHEST TO LOWEST HITS)
+      renderErrorGrid();
 
-            categories.forEach(cat => {
-                let row = { "Error Category": cat };
-                let rowTotal = 0;
-                sortedDates.forEach(date => {
-                    const count = (dayMatrix[date] && dayMatrix[date][cat]) ? dayMatrix[date][cat] : 0;
-                    row[date] = count;
-                    rowTotal += count;
-                });
-                row["Total Hits"] = rowTotal;
-                matrixRows.push(row);
-            });
+      // 3. Render Keywords & Dispenser Lists
+      renderKeywordList();
+      renderDispenserList();
 
-            const wsMatrix = XLSX.utils.json_to_sheet(matrixRows);
-            XLSX.utils.book_append_sheet(wb, wsMatrix, "Day-by-Day Matrix");
+      // 4. Render Day-by-Day Table & Chart
+      renderDailyTableAndChart();
 
-            // 2. Detailed Log Hits Export
-            const hitsData = aggregatedHits.map(h => ({
-                "File": h.file,
-                "Date": h.date,
-                "Category / Issue": h.keyword,
-                "Log Entry": h.raw
-            }));
-            const wsHits = XLSX.utils.json_to_sheet(hitsData);
-            XLSX.utils.book_append_sheet(wb, wsHits, "Detailed Hits");
+      // Re-initialize Lucide icons for new DOM elements
+      lucide.createIcons();
+    }
 
-            XLSX.writeFile(wb, "ATM_Log_Analysis_Report.xlsx");
-        }
-    </script>
+    function renderErrorGrid() {
+      const grid = document.getElementById("errorGrid");
+      grid.innerHTML = "";
+
+      // Convert codeErrors object to sorted array (Highest Hits -> Lowest Hits)
+      const sortedErrors = Object.entries(analysisData.codeErrors)
+        .map(([codeNum, count]) => ({ codeNum, count, info: ERROR_MAP[codeNum] || { name: "UNKNOWN", action: "No predefined action" } }))
+        .sort((a, b) => b.count - a.count);
+
+      document.getElementById("errorTypeCount").innerText = `${sortedErrors.length} Unique Errors Detected`;
+
+      if (sortedErrors.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full text-center py-12 text-slate-400">
+            <i data-lucide="check-circle" class="w-10 h-10 mx-auto mb-2 text-emerald-400"></i>
+            <p class="text-sm font-medium">No Hardware Error Codes Found in Log Analysis!</p>
+          </div>
+        `;
+        return;
+      }
+
+      sortedErrors.forEach(({ codeNum, count, info }) => {
+        const card = document.createElement("div");
+        card.className = "aesthetic-card rounded-xl p-4 hover:shadow-md transition-all cursor-pointer border border-slate-200/80 hover:border-indigo-300 bounce-tap group relative overflow-hidden";
+        card.onclick = () => openActionModal(codeNum, count, info);
+
+        const isCritical = count > 10;
+        const badgeColor = isCritical ? "bg-rose-100 text-rose-700" : "bg-indigo-50 text-indigo-700";
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between mb-2">
+            <span class="text-xs font-bold px-2.5 py-1 rounded-md ${badgeColor}">
+              CODE ${codeNum}
+            </span>
+            <span class="text-xs font-bold text-slate-500 group-hover:text-indigo-600 transition-colors flex items-center gap-1">
+              <i data-lucide="zap" class="w-3 h-3"></i>
+              ${count} Hits
+            </span>
+          </div>
+          <h4 class="text-xs font-bold text-slate-800 line-clamp-2 uppercase tracking-tight group-hover:text-indigo-600 transition-colors">
+            ${info.name}
+          </h4>
+          <p class="text-[11px] text-slate-400 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
+            <span>Action Required</span>
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-1 transition-transform"></i>
+          </p>
+        `;
+
+        grid.appendChild(card);
+      });
+    }
+
+    function renderKeywordList() {
+      const container = document.getElementById("keywordList");
+      container.innerHTML = "";
+
+      const sortedKeywords = Object.entries(analysisData.keywordErrors)
+        .sort((a, b) => b[1] - a[1]);
+
+      if (sortedKeywords.length === 0) {
+        container.innerHTML = `<div class="text-xs text-slate-400 italic">No keyword failures detected in logs</div>`;
+        return;
+      }
+
+      sortedKeywords.forEach(([keyword, hits]) => {
+        const item = document.createElement("div");
+        item.className = "flex items-center justify-between text-xs bg-rose-50/50 hover:bg-rose-50 border border-rose-100 rounded-lg p-2.5 transition-colors";
+        item.innerHTML = `
+          <span class="font-semibold text-rose-800 flex items-center gap-1.5">
+            <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-rose-500"></i>
+            ${keyword}
+          </span>
+          <span class="font-bold text-rose-600 bg-white px-2 py-0.5 rounded shadow-xs border border-rose-100">${hits} hits</span>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function renderDispenserList() {
+      const container = document.getElementById("dispenserCategoryList");
+      container.innerHTML = "";
+
+      const sortedDispenser = Object.entries(analysisData.dispenserErrors)
+        .sort((a, b) => b[1] - a[1]);
+
+      if (sortedDispenser.length === 0) {
+        container.innerHTML = `<div class="text-xs text-slate-400 italic">No dispenser category codes found</div>`;
+        return;
+      }
+
+      sortedDispenser.forEach(([cat, hits]) => {
+        const item = document.createElement("div");
+        item.className = "flex items-center justify-between text-xs bg-amber-50/50 hover:bg-amber-50 border border-amber-100 rounded-lg p-2.5 transition-colors";
+        item.innerHTML = `
+          <span class="font-medium text-amber-900 truncate max-w-[200px]" title="${cat}">
+            ${cat}
+          </span>
+          <span class="font-bold text-amber-700 bg-white px-2 py-0.5 rounded shadow-xs border border-amber-100">${hits} hits</span>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function renderDailyTableAndChart() {
+      const tbody = document.getElementById("dailyTableBody");
+      tbody.innerHTML = "";
+
+      const sortedDates = Object.keys(analysisData.dailyTrend).sort();
+
+      if (sortedDates.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-xs text-slate-400">No dated records found.</td></tr>`;
+        updateChart([], []);
+        return;
+      }
+
+      const chartLabels = [];
+      const chartTotals = [];
+
+      sortedDates.forEach(date => {
+        const day = analysisData.dailyTrend[date];
+        chartLabels.push(date);
+        chartTotals.push(day.total);
+
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition-colors";
+        tr.innerHTML = `
+          <td class="px-4 py-3 font-semibold text-slate-800 text-xs">${date}</td>
+          <td class="px-4 py-3 text-indigo-600 font-medium">${day.code || 0}</td>
+          <td class="px-4 py-3 text-rose-600 font-medium">${day.keyword || 0}</td>
+          <td class="px-4 py-3 text-amber-600 font-medium">${day.dispenser || 0}</td>
+          <td class="px-4 py-3 text-right font-bold text-slate-900">${day.total}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      updateChart(chartLabels, chartTotals);
+    }
+
+    // -------------------------------------------------------------
+    // 5. CHART.JS INTEGRATION
+    // -------------------------------------------------------------
+    function initChart() {
+      const ctx = document.getElementById('dailyChart').getContext('var(--chart-ctx)', {willReadFrequently: true}) || document.getElementById('dailyChart');
+      dailyChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Daily Error Hits',
+            data: [],
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.08)',
+            fill: true,
+            tension: 0.35,
+            borderWidth: 2,
+            pointBackgroundColor: '#4f46e5',
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+            y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } }, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    function updateChart(labels, data) {
+      if (!dailyChartInstance) return;
+      dailyChartInstance.data.labels = labels;
+      dailyChartInstance.data.datasets[0].data = data;
+      dailyChartInstance.update();
+    }
+
+    // -------------------------------------------------------------
+    // 6. ACTION POINTS MODAL DIALOG
+    // -------------------------------------------------------------
+    function openActionModal(codeNum, count, info) {
+      document.getElementById("modalCodeBadge").innerText = `ERROR CODE ${codeNum}`;
+      document.getElementById("modalTitle").innerText = info.name;
+      document.getElementById("modalHits").innerText = `${count} Total Log Hits`;
+
+      const actionsList = document.getElementById("modalActionsList");
+      actionsList.innerHTML = "";
+
+      // Break down actions into structured bullet points
+      const actions = info.action.split('. ').filter(a => a.trim().length > 0);
+      actions.forEach(actionText => {
+        const li = document.createElement("li");
+        li.className = "flex items-start gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100";
+        li.innerHTML = `
+          <i data-lucide="wrench" class="w-4 h-4 text-indigo-500 mt-0.5 shrink-0"></i>
+          <span>${actionText.endsWith('.') ? actionText : actionText + '.'}</span>
+        `;
+        actionsList.appendChild(li);
+      });
+
+      lucide.createIcons();
+
+      const modal = document.getElementById("actionModal");
+      const content = document.getElementById("modalContent");
+      modal.classList.remove("hidden");
+      setTimeout(() => {
+        content.classList.remove("scale-95", "opacity-0");
+        content.classList.add("scale-100", "opacity-100");
+      }, 10);
+    }
+
+    function closeModal() {
+      const modal = document.getElementById("actionModal");
+      const content = document.getElementById("modalContent");
+      content.classList.remove("scale-100", "opacity-100");
+      content.classList.add("scale-95", "opacity-0");
+      setTimeout(() => {
+        modal.classList.add("hidden");
+      }, 150);
+    }
+
+    // -------------------------------------------------------------
+    // 7. EXCEL EXPORT FUNCTIONALITY
+    // -------------------------------------------------------------
+    function exportToExcel() {
+      if (analysisData.detailedRecords.length === 0) {
+        alert("No records available to export!");
+        return;
+      }
+
+      // 1. Summary Sheet Data
+      const summaryData = [
+        ["ATM Diagnostic Report Summary"],
+        ["Generated Date", new Date().toLocaleString()],
+        ["Total Processed Events", analysisData.totalEvents],
+        [],
+        ["Error Code", "Description", "Hit Count", "Recommended Action"],
+        ...Object.entries(analysisData.codeErrors).map(([code, hits]) => [
+          `CODE ${code}`,
+          ERROR_MAP[code]?.name || "UNKNOWN",
+          hits,
+          ERROR_MAP[code]?.action || ""
+        ])
+      ];
+
+      // 2. Keyword Failures Sheet
+      const keywordData = [
+        ["Keyword Failure", "Total Hits"],
+        ...Object.entries(analysisData.keywordErrors).map(([kw, hits]) => [kw, hits])
+      ];
+
+      // 3. Dispenser Categories Sheet
+      const dispenserData = [
+        ["Dispenser Failure Category", "Total Hits"],
+        ...Object.entries(analysisData.dispenserErrors).map(([cat, hits]) => [cat, hits])
+      ];
+
+      // Create Workbook
+      const wb = XLSX.utils.book_new();
+      
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+      const wsKeywords = XLSX.utils.aoa_to_sheet(keywordData);
+      const wsDispenser = XLSX.utils.aoa_to_sheet(dispenserData);
+      const wsDetailed = XLSX.utils.json_to_sheet(analysisData.detailedRecords);
+
+      XLSX.utils.book_append_sheet(wb, wsSummary, "Error Codes Summary");
+      XLSX.utils.book_append_sheet(wb, wsKeywords, "Keyword Failures");
+      XLSX.utils.book_append_sheet(wb, wsDispenser, "Dispenser Failures");
+      XLSX.utils.book_append_sheet(wb, wsDetailed, "Raw Event Logs");
+
+      XLSX.writeFile(wb, `ATM_Log_Diagnostics_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+    }
+
+    // -------------------------------------------------------------
+    // 8. SAMPLE / DEMO LOG GENERATOR
+    // -------------------------------------------------------------
+    function triggerDemoData() {
+      showProcessing(true, "Generating & analyzing demo log file...");
+      
+      setTimeout(() => {
+        const demoLogs = `
+2026-10-15 10:12:01 ERR CODE 02 - MOTOR TIMEOUT IN DISPENSER
+2026-10-15 10:15:22 DISPENSER FAILURE (02:NO NOTES DISPENSED)
+2026-10-15 11:20:00 Switch conn failure during host sync
+2026-10-15 12:00:45 ERR CODE 11 - CASH JAM IN TRANSPORT CHUTE
+2026-10-15 12:05:10 DISPENSER FAILURE (11:CASH JAM)
+2026-10-15 14:10:00 app level error while processing card
+2026-10-16 09:12:30 ERR CODE 02 - MOTOR TIMEOUT
+2026-10-16 09:14:00 DISPENSER FAILURE (02:NO NOTES DISPENSED)
+2026-10-16 10:22:11 suspect-1 detected in upper sensor path
+2026-10-16 11:05:44 ATR error from Smart Card Reader
+2026-10-16 12:30:12 ERR CODE 03 - SENSOR FAILURE
+2026-10-16 13:40:55 ERR CODE 02 - MOTOR TIMEOUT
+2026-10-16 15:10:00 pin encryption failure on EPP key exchange
+2026-10-17 08:00:12 ERR CODE 11 - CASH JAM
+2026-10-17 08:02:00 DISPENSER FAILURE (11:CASH JAM)
+2026-10-17 09:15:33 switch resp-timeout on host request
+2026-10-17 10:45:00 command reject by CDM module
+2026-10-17 11:12:00 ERR CODE 76 - CAM FIND HOME TO
+2026-10-17 12:00:00 ERR CODE 02 - MOTOR TIMEOUT
+2026-10-17 13:10:15 suspect-2 note rejected to divert bin
+        `;
+
+        resetDataStore();
+        processLogContent(demoLogs, "sample_atm_logs.log");
+        showProcessing(false);
+        renderDashboard();
+      }, 400);
+    }
+
+    function showProcessing(show, text = "") {
+      const el = document.getElementById("processingStatus");
+      if (show) {
+        document.getElementById("statusText").innerText = text;
+        el.classList.remove("hidden");
+      } else {
+        el.classList.add("hidden");
+      }
+    }
+  </script>
 </body>
 </html>
-
-use this code we need to change in this not the last one
