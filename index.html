@@ -16,7 +16,7 @@
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   
   <style>
-    /* Bounce tap animation on interactive items */
+    /* Micro-interactions & animations */
     .bounce-tap {
       transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
@@ -30,7 +30,8 @@
       transform: translateY(-3px);
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
     }
-    /* Scrollbar styles */
+    
+    /* Scrollbar Styling */
     ::-webkit-scrollbar {
       width: 8px;
       height: 8px;
@@ -45,7 +46,8 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #475569;
     }
-    /* Dark Glassmorphism Cards */
+
+    /* Dark Glassmorphism Styling */
     .aesthetic-card {
       background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(12px);
@@ -56,7 +58,7 @@
 </head>
 <body class="h-full font-sans antialiased bg-slate-950 text-slate-100 flex flex-col min-h-screen">
 
-  <!-- Top Navigation Header -->
+  <!-- TOP NAVIGATION HEADER -->
   <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-30">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center space-x-3">
@@ -85,10 +87,10 @@
     </div>
   </header>
 
-  <!-- MAIN CONTAINER -->
+  <!-- MAIN DASHBOARD CONTENT -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
 
-    <!-- FILE UPLOAD DROPZONE -->
+    <!-- UPLOAD DROPZONE -->
     <section class="aesthetic-card rounded-2xl p-6 transition-all border-dashed border-2 border-indigo-500/30 hover:border-indigo-400/60 bg-gradient-to-r from-indigo-950/20 via-slate-900/40 to-slate-900/20">
       <div class="flex flex-col items-center justify-center text-center cursor-pointer" onclick="document.getElementById('logFileInput').click()">
         <input type="file" id="logFileInput" class="hidden" multiple accept=".log,.txt,.zip" onchange="handleFileUpload(event)">
@@ -96,14 +98,14 @@
           <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
         </div>
         <h3 class="text-base font-semibold text-slate-100">Drop ATM Log Files or ZIP Archives here</h3>
-        <p class="text-xs text-slate-400 mt-1">Extracts exact DISPENSER FAILURE (XX:...) patterns, 01-99 codes, and Monitored System Keywords</p>
+        <p class="text-xs text-slate-400 mt-1">Parses codes directly from DISPENSER FAILURE (XX:...) lines and Monitored Keywords</p>
         <div class="mt-4 flex flex-wrap justify-center items-center gap-2 text-xs text-slate-400">
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
-            01-99 Dispenser Code Engine
+            01-99 Code Engine
           </span>
           <span>•</span>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
-            Clickable Keyword Failures
+            Clickable Keywords
           </span>
           <span>•</span>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700" id="fileCountBadge">
@@ -112,7 +114,7 @@
         </div>
       </div>
 
-      <!-- Processing Progress Indicator -->
+      <!-- Loading Indicator -->
       <div id="processingStatus" class="hidden mt-4 pt-4 border-t border-slate-800 text-center">
         <div class="flex items-center justify-center space-x-2 text-sm text-indigo-400 font-medium">
           <i class="fa-solid fa-spinner fa-spin"></i>
@@ -121,7 +123,7 @@
       </div>
     </section>
 
-    <!-- METRICS SUMMARY CARDS -->
+    <!-- METRICS OVERVIEW CARDS -->
     <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
         <div>
@@ -135,7 +137,7 @@
 
       <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
         <div>
-          <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Dispenser Failure Hits</p>
+          <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Dispenser Code Hits</p>
           <h4 id="statCodeErrors" class="text-2xl font-bold text-indigo-400 mt-1">0</h4>
         </div>
         <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20 bounce-tap">
@@ -164,98 +166,93 @@
       </div>
     </section>
 
-    <!-- DASHBOARD CONTENT GRID -->
-    <div id="analyticsSection" class="space-y-6">
-
-      <!-- DISPENSER FAILURE CODE COUNTS (SORTED HIGH TO LOW) -->
-      <section class="aesthetic-card rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h2 class="text-base font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-chart-line text-indigo-400"></i>
-              Dispenser Failure Code Counts (Sorted Highest to Lowest Hits)
-            </h2>
-            <p class="text-xs text-slate-400">Extracted directly from DISPENSER FAILURE (XX:...) in logs. Click any card for technical action points.</p>
-          </div>
-          <span class="text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 px-3 py-1 rounded-full" id="errorTypeCount">0 Active Codes</span>
+    <!-- DISPENSER CODE COUNTS (SORTED HIGH TO LOW) -->
+    <section class="aesthetic-card rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-chart-line text-indigo-400"></i>
+            Dispenser Failure Code Counts (Sorted Highest to Lowest Hits)
+          </h2>
+          <p class="text-xs text-slate-400">Extracted from DISPENSER FAILURE (XX:...) log patterns. Click any card for action steps.</p>
         </div>
-
-        <!-- ERROR BOXES GRID -->
-        <div id="errorGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          <div class="col-span-full text-center py-12 text-slate-500">
-            <i class="fa-solid fa-file-circle-question text-4xl mb-2 opacity-40"></i>
-            <p class="text-sm">No log data analyzed yet. Upload files or load sample logs to view failure counts.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- MONITORED KEYWORDS & DAILY TREND CHART -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        <!-- MONITORED KEYWORD FAILURES (CLICKABLE FOR ACTION POINTS) -->
-        <div class="lg:col-span-1 space-y-6">
-          <div class="aesthetic-card rounded-2xl p-5">
-            <div class="mb-3">
-              <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                <i class="fa-solid fa-key text-rose-400"></i>
-                Monitored Keyword Failures
-              </h3>
-              <p class="text-[11px] text-slate-400 mt-0.5">Click any keyword box to view diagnostic action points.</p>
-            </div>
-            <div id="keywordList" class="space-y-2.5">
-              <div class="text-xs text-slate-500 italic">No keyword failures detected</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- DAY BY DAY TREND CHART -->
-        <div class="lg:col-span-2 aesthetic-card rounded-2xl p-5 flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-calendar-days text-indigo-400"></i>
-              Daily Failure Trend Analysis
-            </h3>
-            <span class="text-xs text-slate-400">Hits per Calendar Date</span>
-          </div>
-          <div class="relative w-full h-64 flex-1">
-            <canvas id="dailyChart"></canvas>
-          </div>
-        </div>
-
+        <span class="text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 px-3 py-1 rounded-full" id="errorTypeCount">0 Active Codes</span>
       </div>
 
-      <!-- DAY BY DAY DATA TABLE -->
-      <section class="aesthetic-card rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-base font-bold text-white flex items-center gap-2">
-            <i class="fa-solid fa-table-list text-indigo-400"></i>
-            Day-by-Day Error & Hit Breakdown Table
-          </h2>
+      <!-- ERROR GRID -->
+      <div id="errorGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div class="col-span-full text-center py-12 text-slate-500">
+          <i class="fa-solid fa-file-circle-question text-4xl mb-2 opacity-40"></i>
+          <p class="text-sm">No log data analyzed yet. Upload log files to display error counts.</p>
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-slate-300">
-            <thead class="bg-slate-900/90 text-slate-400 text-xs uppercase font-semibold border-b border-slate-800">
-              <tr>
-                <th class="px-4 py-3 rounded-l-lg">Extracted Date</th>
-                <th class="px-4 py-3">Dispenser Code Failures</th>
-                <th class="px-4 py-3">Keyword Failures</th>
-                <th class="px-4 py-3 text-right rounded-r-lg">Total Daily Hits</th>
-              </tr>
-            </thead>
-            <tbody id="dailyTableBody" class="divide-y divide-slate-800/60">
-              <tr>
-                <td colspan="4" class="text-center py-6 text-xs text-slate-500">Upload log files to view day-by-day distribution.</td>
-              </tr>
-            </tbody>
-          </table>
+      </div>
+    </section>
+
+    <!-- MONITORED KEYWORDS & TREND CHART -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- KEYWORD FAILURES (CLICKABLE CARDS) -->
+      <div class="lg:col-span-1 space-y-6">
+        <div class="aesthetic-card rounded-2xl p-5">
+          <div class="mb-3">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-key text-rose-400"></i>
+              Monitored Keyword Failures
+            </h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">Click any keyword box to view diagnostic action points.</p>
+          </div>
+          <div id="keywordList" class="space-y-2.5">
+            <div class="text-xs text-slate-500 italic">No keyword failures detected</div>
+          </div>
         </div>
-      </section>
+      </div>
+
+      <!-- DAILY TREND CHART -->
+      <div class="lg:col-span-2 aesthetic-card rounded-2xl p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-calendar-days text-indigo-400"></i>
+            Daily Failure Trend Analysis
+          </h3>
+          <span class="text-xs text-slate-400">Hits per Calendar Date</span>
+        </div>
+        <div class="relative w-full h-64 flex-1">
+          <canvas id="dailyChart"></canvas>
+        </div>
+      </div>
 
     </div>
 
+    <!-- DAILY BREAKDOWN TABLE -->
+    <section class="aesthetic-card rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-table-list text-indigo-400"></i>
+          Day-by-Day Error & Hit Breakdown Table
+        </h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-300">
+          <thead class="bg-slate-900/90 text-slate-400 text-xs uppercase font-semibold border-b border-slate-800">
+            <tr>
+              <th class="px-4 py-3 rounded-l-lg">Extracted Date</th>
+              <th class="px-4 py-3">Dispenser Code Failures</th>
+              <th class="px-4 py-3">Keyword Failures</th>
+              <th class="px-4 py-3 text-right rounded-r-lg">Total Daily Hits</th>
+            </tr>
+          </thead>
+          <tbody id="dailyTableBody" class="divide-y divide-slate-800/60">
+            <tr>
+              <td colspan="4" class="text-center py-6 text-xs text-slate-500">Upload log files to view day-by-day distribution.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
   </main>
 
-  <!-- ACTION POINTS MODAL -->
+  <!-- ACTION MODAL DIALOG -->
   <div id="actionModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-slate-800 transform transition-all scale-95 opacity-0" id="modalContent">
       <div class="flex items-start justify-between border-b border-slate-800 pb-3">
@@ -305,7 +302,7 @@
     </div>
   </footer>
 
-  <!-- APPLICATION JAVASCRIPT LOGIC -->
+  <!-- SCRIPT LOGIC -->
   <script>
     // MASTER DISPENSER ERROR CODE MAPPING (01-99)
     const MASTER_ERROR_MAP = {
@@ -410,7 +407,7 @@
       99: { name: "UNKNOWN ERROR", action: "Consult manufacturer hardware logs." }
     };
 
-    // MONITORED KEYWORD DEFINITIONS & ACTIONS
+    // MONITORED KEYWORDS
     const KEYWORD_ACTION_MAP = {
       "Switch conn failure": { name: "Switch Connection Failure", action: "Check network switch Ethernet patch cable. Verify ATM router signal, WAN connectivity, and switch IP routing." },
       "app level error": { name: "Application Level Error", action: "Inspect terminal application software logs. Restart ATM runtime middleware and re-verify session settings." },
@@ -424,10 +421,10 @@
 
     const KEYWORD_TARGETS = Object.keys(KEYWORD_ACTION_MAP);
 
-    // Regex to capture the exact code digits immediately inside DISPENSER FAILURE (XX:...)
+    // Extraction regex for DISPENSER FAILURE (XX:...)
     const DISPENSER_FAILURE_REGEX = /DISPENSER\s+FAILURE\s*\(\s*(\d{1,2})/gi;
 
-    // Multi-format Date Extractor
+    // Date Extractor
     const DATE_PATTERNS = [
       /(\d{4}[-_/.]\d{2}[-_/.]\d{2})/,   // YYYY-MM-DD or YYYY_MM_DD
       /(\d{2}[-_/.]\d{2}[-_/.]\d{4})/,   // DD-MM-YYYY
