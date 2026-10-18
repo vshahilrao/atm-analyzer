@@ -66,7 +66,7 @@
         <div>
           <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
             ATM Log Diagnostics
-            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v2.4 Smart-Parse</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v2.5 Dual-Trend</span>
           </h1>
           <p class="text-xs text-slate-400">Dispenser Error Code & Monitored Keyword Intelligence</p>
         </div>
@@ -96,14 +96,14 @@
           <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
         </div>
         <h3 class="text-base font-semibold text-slate-100">Drop ATM Log Files or ZIP Archives here</h3>
-        <p class="text-xs text-slate-400 mt-1">Extracts exact DISPENSER FAILURE (XX:...) patterns, 01-99 codes, and Monitored System Keywords</p>
+        <p class="text-xs text-slate-400 mt-1">Extracts exact DISPENSER FAILURE (XX:...) patterns, 01-99 codes, and Monitored System Keywords (including E*2)</p>
         <div class="mt-4 flex flex-wrap justify-center items-center gap-2 text-xs text-slate-400">
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
             01-99 Dispenser Code Engine
           </span>
           <span>•</span>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
-            Clickable Keyword Failures
+            E*2 & Keyword Engine
           </span>
           <span>•</span>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700" id="fileCountBadge">
@@ -167,7 +167,7 @@
     <!-- DASHBOARD CONTENT GRID -->
     <div id="analyticsSection" class="space-y-6">
 
-      <!-- DISPENSER FAILURE CODE COUNTS (SORTED HIGH TO LOW) -->
+      <!-- DISPENSER FAILURE CODE COUNTS -->
       <section class="aesthetic-card rounded-2xl p-6">
         <div class="flex items-center justify-between mb-4">
           <div>
@@ -189,10 +189,10 @@
         </div>
       </section>
 
-      <!-- MONITORED KEYWORDS & DAILY TREND CHART -->
+      <!-- MONITORED KEYWORDS & DUAL-TREND CHART -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <!-- MONITORED KEYWORD FAILURES (CLICKABLE FOR ACTION POINTS) -->
+        <!-- MONITORED KEYWORD FAILURES -->
         <div class="lg:col-span-1 space-y-6">
           <div class="aesthetic-card rounded-2xl p-5">
             <div class="mb-3">
@@ -208,14 +208,21 @@
           </div>
         </div>
 
-        <!-- DAY BY DAY TREND CHART -->
+        <!-- DUAL DATASET DAY BY DAY TREND CHART -->
         <div class="lg:col-span-2 aesthetic-card rounded-2xl p-5 flex flex-col justify-between">
           <div class="flex items-center justify-between mb-2">
             <h3 class="text-sm font-bold text-white flex items-center gap-2">
               <i class="fa-solid fa-calendar-days text-indigo-400"></i>
               Daily Failure Trend Analysis
             </h3>
-            <span class="text-xs text-slate-400">Hits per Calendar Date</span>
+            <div class="flex items-center gap-4 text-xs">
+              <span class="flex items-center gap-1.5 text-indigo-300">
+                <span class="w-3 h-3 rounded-full bg-indigo-500 inline-block"></span> Dispenser Failures
+              </span>
+              <span class="flex items-center gap-1.5 text-rose-300">
+                <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> Monitored Keywords
+              </span>
+            </div>
           </div>
           <div class="relative w-full h-64 flex-1">
             <canvas id="dailyChart"></canvas>
@@ -301,7 +308,7 @@
   <!-- FOOTER -->
   <footer class="bg-slate-900/60 border-t border-slate-800/80 py-4 mt-8">
     <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
-      ATM Log Intelligence & Diagnostics Engine • v2.4 Professional Edition
+      ATM Log Intelligence & Diagnostics Engine • v2.5 Professional Edition
     </div>
   </footer>
 
@@ -410,7 +417,7 @@
       99: { name: "UNKNOWN ERROR", action: "Consult manufacturer hardware logs." }
     };
 
-    // MONITORED KEYWORD DEFINITIONS & ACTIONS
+    // MONITORED KEYWORD DEFINITIONS & ACTIONS (INCLUDES E*2)
     const KEYWORD_ACTION_MAP = {
       "Switch conn failure": { name: "Switch Connection Failure", action: "Check network switch Ethernet patch cable. Verify ATM router signal, WAN connectivity, and switch IP routing." },
       "app level error": { name: "Application Level Error", action: "Inspect terminal application software logs. Restart ATM runtime middleware and re-verify session settings." },
@@ -419,7 +426,8 @@
       "suspect-2": { name: "Suspect Banknote Detected (Path 2)", action: "Inspect suspect banknote transport chute. Check optical sensor array for dust or alignment drift." },
       "pin encryption failure": { name: "EPP PIN Encryption Failure", action: "Verify Encrypting PIN Pad (EPP) master key status. Check serial/USB connection to EPP board." },
       "switch resp-timeout": { name: "Switch Response Timeout", action: "Check host network latency. Inspect host gateway parameters and router firewall socket connections." },
-      "command reject": { name: "Command Rejected by Peripheral", action: "Verify device driver protocol compatibility. Re-send command sequence or perform module reset." }
+      "command reject": { name: "Command Rejected by Peripheral", action: "Verify device driver protocol compatibility. Re-send command sequence or perform module reset." },
+      "E*2": { name: "E*2 Communication Fault", action: "Inspect hardware module interface and E*2 line communication protocol for corrupted packet transmissions or hardware disconnects." }
     };
 
     const KEYWORD_TARGETS = Object.keys(KEYWORD_ACTION_MAP);
@@ -535,7 +543,7 @@
           }
         }
 
-        // PARSE MONITORED KEYWORDS
+        // PARSE MONITORED KEYWORDS (INCLUDING E*2)
         KEYWORD_TARGETS.forEach(keyword => {
           if (line.toLowerCase().includes(keyword.toLowerCase())) {
             analysisData.keywordErrors[keyword] = (analysisData.keywordErrors[keyword] || 0) + 1;
@@ -698,17 +706,19 @@
 
       if (sortedDates.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-xs text-slate-500">No dated records available.</td></tr>`;
-        updateChart([], []);
+        updateChart([], [], []);
         return;
       }
 
       const chartLabels = [];
-      const chartTotals = [];
+      const codeData = [];
+      const keywordData = [];
 
       sortedDates.forEach(date => {
         const day = analysisData.dailyTrend[date];
         chartLabels.push(date);
-        chartTotals.push(day.total);
+        codeData.push(day.code || 0);
+        keywordData.push(day.keyword || 0);
 
         const tr = document.createElement("tr");
         tr.className = "hover:bg-slate-900/40 transition-colors";
@@ -721,7 +731,7 @@
         tbody.appendChild(tr);
       });
 
-      updateChart(chartLabels, chartTotals);
+      updateChart(chartLabels, codeData, keywordData);
     }
 
     function initChart() {
@@ -730,17 +740,30 @@
         type: 'line',
         data: {
           labels: [],
-          datasets: [{
-            label: 'Daily Failures',
-            data: [],
-            borderColor: '#818cf8',
-            backgroundColor: 'rgba(99, 102, 241, 0.15)',
-            fill: true,
-            tension: 0.35,
-            borderWidth: 2,
-            pointBackgroundColor: '#6366f1',
-            pointRadius: 4
-          }]
+          datasets: [
+            {
+              label: 'Dispenser Failures',
+              data: [],
+              borderColor: '#818cf8',
+              backgroundColor: 'rgba(99, 102, 241, 0.15)',
+              fill: true,
+              tension: 0.35,
+              borderWidth: 2,
+              pointBackgroundColor: '#6366f1',
+              pointRadius: 4
+            },
+            {
+              label: 'Monitored Keywords',
+              data: [],
+              borderColor: '#f43f5e',
+              backgroundColor: 'rgba(244, 63, 94, 0.15)',
+              fill: true,
+              tension: 0.35,
+              borderWidth: 2,
+              pointBackgroundColor: '#f43f5e',
+              pointRadius: 4
+            }
+          ]
         },
         options: {
           responsive: true,
@@ -756,10 +779,11 @@
       });
     }
 
-    function updateChart(labels, data) {
+    function updateChart(labels, codeData, keywordData) {
       if (!dailyChartInstance) return;
       dailyChartInstance.data.labels = labels;
-      dailyChartInstance.data.datasets[0].data = data;
+      dailyChartInstance.data.datasets[0].data = codeData;
+      dailyChartInstance.data.datasets[1].data = keywordData;
       dailyChartInstance.update();
     }
 
@@ -859,6 +883,7 @@ Line 27552 DISPENSER FAILURE (02:02NO NOTES DISPENSED)
 Line 27553 Switch conn failure
 Line 27554 DISPENSER FAILURE (11:11NO NOTES DISPENSED)
 Line 27555 app level error
+Line 27556 E*2
         `;
         const demoLogs2 = `
 Line 1234 DISPENSER FAILURE (02:02NO NOTES DISPENSED)
@@ -867,6 +892,7 @@ Line 1236 ATR error
 Line 1237 DISPENSER FAILURE (56:56NO NOTES DISPENSED)
 Line 1238 DISPENSER FAILURE (69:FID A CARD REMOVE TIMEOUT)
 Line 1239 pin encryption failure
+Line 1240 E*2
         `;
 
         resetDataStore();
