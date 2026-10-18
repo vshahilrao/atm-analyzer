@@ -1,1003 +1,929 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-900 text-slate-100">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATM Log Diagnostics & Analytics Dashboard</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- JSZip for handling zip uploads -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <!-- SheetJS (xlsx) for exporting reports -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATM Log Analytics & Diagnostics Dashboard</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SheetJS (xlsx) for Excel Export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- JSZip for handling uploaded ZIP log bundles -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <style>
+    /* Bouncy animation for icons when clicked/tapped */
+    .bounce-tap:active i, .bounce-tap:active svg {
+      transform: scale(0.75);
+      transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .bounce-tap i, .bounce-tap svg {
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .bounce-tap:hover i, .bounce-tap:hover svg {
+      transform: scale(1.15) rotate(-3deg);
+    }
     
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#f0fdf4',
-                            500: '#22c55e',
-                            600: '#16a34a',
-                        },
-                        dark: {
-                            800: '#1e293b',
-                            900: '#0f172a',
-                            950: '#020617',
-                        }
-                    },
-                    animation: {
-                        'bounce-short': 'bounce 0.4s ease-in-out 1',
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Custom Bouncy Icon Tap Animation */
-        .bounce-tap {
-            transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .bounce-tap:active, .bounce-tap:focus-within {
-            transform: scale(1.18) rotate(-4deg);
-        }
-        .card-hover {
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .card-hover:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
-        }
-        /* Scrollbar styles */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0f172a;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-    </style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Soft Glow Aesthetic Cards */
+    .aesthetic-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+    }
+  </style>
 </head>
-<body class="h-full font-sans antialiased bg-slate-950 text-slate-100 flex flex-col min-h-screen">
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
 
-    <!-- Top Navigation Header -->
-    <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center space-x-3">
-                <div class="p-2.5 bg-indigo-600/20 text-indigo-400 rounded-xl border border-indigo-500/30">
-                    <i class="fa-solid fa-server text-xl bounce-tap inline-block"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                        ATM Log Diagnostics
-                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v2.4 Smart-Parse</span>
-                    </h1>
-                    <p class="text-xs text-slate-400">Dispenser Error Code & Log Analytics Platform</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-3">
-                <button id="btnLoadDemo" class="px-3.5 py-2 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-2 shadow-sm">
-                    <i class="fa-solid fa-wand-magic-sparkles text-amber-400 bounce-tap"></i> Load Demo Logs
-                </button>
-                <button id="btnExportExcel" class="px-3.5 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                    <i class="fa-solid fa-file-excel bounce-tap"></i> Export Excel (.xlsx)
-                </button>
-            </div>
+  <!-- TOP HEADER -->
+  <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-indigo-600 p-2 rounded-xl text-white bounce-tap cursor-pointer">
+          <i data-lucide="activity" class="w-6 h-6"></i>
         </div>
-    </header>
-
-    <!-- Main Content Container -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-
-        <!-- File Upload Drag/Drop Section -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
-                <div class="w-full md:w-2/3 space-y-2">
-                    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-file-arrow-up text-indigo-400 bounce-tap"></i> Upload ATM Log Files or ZIP Archive
-                    </h2>
-                    <p class="text-sm text-slate-400">
-                        Supports <code class="text-indigo-300 bg-slate-800 px-1.5 py-0.5 rounded text-xs">.log</code>, <code class="text-indigo-300 bg-slate-800 px-1.5 py-0.5 rounded text-xs">.txt</code>, and compressed <code class="text-indigo-300 bg-slate-800 px-1.5 py-0.5 rounded text-xs">.zip</code> files containing multiple log archives. Strict parsing rules apply for <code class="text-amber-300 bg-slate-800 px-1.5 py-0.5 rounded text-xs">XX:NO NOTES DISPENSED</code> patterns.
-                    </p>
-                </div>
-                
-                <div class="w-full md:w-1/3 flex flex-col items-end gap-2">
-                    <label for="logFileInput" class="w-full flex flex-col items-center justify-center px-4 py-4 border-2 border-dashed border-indigo-500/40 hover:border-indigo-400 bg-indigo-950/20 hover:bg-indigo-900/30 text-indigo-300 rounded-xl cursor-pointer transition text-center group">
-                        <i class="fa-solid fa-cloud-arrow-up text-2xl mb-1 group-hover:scale-110 transition-transform bounce-tap"></i>
-                        <span class="text-xs font-semibold">Click or Drop Files / ZIP Here</span>
-                        <span class="text-[10px] text-slate-400 mt-0.5">Parse multiple dates & files automatically</span>
-                        <input type="file" id="logFileInput" class="hidden" multiple accept=".log,.txt,.zip" />
-                    </label>
-                </div>
-            </div>
-
-            <!-- Upload Status Banner -->
-            <div id="fileStatsBanner" class="mt-4 pt-4 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-4 hidden">
-                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-                    <div class="text-xs text-slate-400 flex items-center gap-1.5">
-                        <i class="fa-solid fa-file-archive text-amber-400 bounce-tap"></i> ZIP / Log Files
-                    </div>
-                    <div class="text-lg font-bold text-white mt-1" id="statFileCount">0</div>
-                </div>
-                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-                    <div class="text-xs text-slate-400 flex items-center gap-1.5">
-                        <i class="fa-solid fa-list-check text-indigo-400 bounce-tap"></i> Lines Scanned
-                    </div>
-                    <div class="text-lg font-bold text-indigo-400 mt-1" id="statLinesCount">0</div>
-                </div>
-                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-                    <div class="text-xs text-slate-400 flex items-center gap-1.5">
-                        <i class="fa-solid fa-triangle-exclamation text-rose-400 bounce-tap"></i> Total Failures Hit
-                    </div>
-                    <div class="text-lg font-bold text-rose-400 mt-1" id="statTotalHits">0</div>
-                </div>
-                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-                    <div class="text-xs text-slate-400 flex items-center gap-1.5">
-                        <i class="fa-solid fa-calendar-days text-emerald-400 bounce-tap"></i> Detected Dates
-                    </div>
-                    <div class="text-lg font-bold text-emerald-400 mt-1" id="statDateRange">0 Days</div>
-                </div>
-            </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight tracking-tight text-white">ATM Log Diagnostics</h1>
+          <p class="text-xs text-slate-400">Dispenser & Keyword Failure Intelligence Engine</p>
         </div>
+      </div>
 
-        <!-- Main Dispenser Error Code Counts Grid (Unified Sorted Highest to Lowest) -->
-        <div class="space-y-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-arrow-down-wide-short text-emerald-400 bounce-tap"></i> Dispenser Error Code Counts
-                    </h2>
-                    <p class="text-xs text-slate-400">Sorted from highest hits to lowest. Unified view showing mapped codes (01-99), keyword failures, and generic dispenser lines.</p>
-                </div>
-                <div class="text-xs text-slate-400 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                    <i class="fa-solid fa-info-circle text-indigo-400"></i> Click card for Action Points & Details
-                </div>
-            </div>
+      <div class="flex items-center space-x-3">
+        <button id="exportExcelBtn" onclick="exportToExcel()" class="hidden bounce-tap bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all flex items-center space-x-2 shadow-sm">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+          <span>Export Excel Report</span>
+        </button>
+        <button onclick="triggerDemoData()" class="bounce-tap bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium px-3 py-2 rounded-lg transition-all border border-slate-700 flex items-center space-x-1.5">
+          <i data-lucide="play-circle" class="w-4 h-4"></i>
+          <span>Load Demo Logs</span>
+        </button>
+      </div>
+    </div>
+  </header>
 
-            <div id="unifiedGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Empty state placeholder -->
-                <div class="col-span-full bg-slate-900 border border-dashed border-slate-800 rounded-2xl p-12 text-center text-slate-500">
-                    <i class="fa-solid fa-chart-pie text-4xl mb-3 text-slate-700 bounce-tap"></i>
-                    <p class="text-base font-semibold text-slate-400">No Log Data Parsed Yet</p>
-                    <p class="text-xs text-slate-500 mt-1">Upload ATM log files (.log, .txt, .zip) or click "Load Demo Logs" to inspect analytics.</p>
-                </div>
-            </div>
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+
+    <!-- FILE UPLOAD DROPZONE -->
+    <section class="aesthetic-card rounded-2xl p-6 transition-all border-dashed border-2 border-indigo-200 hover:border-indigo-400 bg-gradient-to-r from-indigo-50/30 via-white to-slate-50">
+      <div class="flex flex-col items-center justify-center text-center cursor-pointer" onclick="document.getElementById('logFileInput').click()">
+        <input type="file" id="logFileInput" class="hidden" multiple accept=".log,.txt,.zip" onchange="handleFileUpload(event)">
+        <div class="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mb-3 bounce-tap shadow-sm">
+          <i data-lucide="upload-cloud" class="w-8 h-8"></i>
         </div>
+        <h3 class="text-base font-semibold text-slate-800">Drop ATM Log Files or ZIP Archives here</h3>
+        <p class="text-xs text-slate-500 mt-1">Extracts exact DISPENSER FAILURE patterns, 01-99 codes, and Monitored Keywords</p>
+        <div class="mt-4 flex items-center space-x-2 text-xs text-slate-400">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+            01-99 Code Engine
+          </span>
+          <span>•</span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+            8 Monitored Keywords
+          </span>
+          <span>•</span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600" id="fileCountBadge">
+            ZIP Bundle Counter
+          </span>
+        </div>
+      </div>
 
-        <!-- Daily Failure Trend Analysis Chart Section -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-chart-line text-indigo-400 bounce-tap"></i> Daily Failure Trend Analysis
-                    </h2>
-                    <p class="text-xs text-slate-400">Extracted chronologically across log entries, dates, and zip timestamps.</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span> Multi-format Date Parsing Active
-                    </span>
-                </div>
-            </div>
-            <div class="w-full h-72 relative">
-                <canvas id="dailyTrendChart"></canvas>
-            </div>
+      <!-- Processing Progress Indicator -->
+      <div id="processingStatus" class="hidden mt-4 pt-4 border-t border-slate-200 text-center">
+        <div class="flex items-center justify-center space-x-2 text-sm text-indigo-600 font-medium">
+          <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
+          <span id="statusText">Analyzing Log Content...</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- METRICS SUMMARY CARDS -->
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Evaluated Events</p>
+          <h4 id="statTotalEvents" class="text-2xl font-bold text-slate-800 mt-1">0</h4>
+        </div>
+        <div class="p-3 bg-blue-50 text-blue-600 rounded-xl bounce-tap">
+          <i data-lucide="layers" class="w-6 h-6"></i>
+        </div>
+      </div>
+
+      <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Dispenser Error Codes</p>
+          <h4 id="statCodeErrors" class="text-2xl font-bold text-indigo-600 mt-1">0</h4>
+        </div>
+        <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl bounce-tap">
+          <i data-lucide="cpu" class="w-6 h-6"></i>
+        </div>
+      </div>
+
+      <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Monitored Keywords</p>
+          <h4 id="statKeywordErrors" class="text-2xl font-bold text-rose-600 mt-1">0</h4>
+        </div>
+        <div class="p-3 bg-rose-50 text-rose-600 rounded-xl bounce-tap">
+          <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+        </div>
+      </div>
+
+      <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Analyzed Log Files</p>
+          <h4 id="statLogFiles" class="text-2xl font-bold text-amber-600 mt-1">0</h4>
+        </div>
+        <div class="p-3 bg-amber-50 text-amber-600 rounded-xl bounce-tap">
+          <i data-lucide="files" class="w-6 h-6"></i>
+        </div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD CONTENT GRID -->
+    <div id="analyticsSection" class="space-y-6">
+
+      <!-- TOP ERROR CODES SUMMARY (SORTED HIGH TO LOW) -->
+      <section class="aesthetic-card rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+              <i data-lucide="trending-up" class="w-5 h-5 text-indigo-600"></i>
+              Dispenser Error Code Counts (Sorted Highest to Lowest Hits)
+            </h2>
+            <p class="text-xs text-slate-500">Click any card box to inspect root causes and recommended technical action points.</p>
+          </div>
+          <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full" id="errorTypeCount">0 Active Codes</span>
         </div>
 
-        <!-- Day-by-Day Error & Hit Breakdown Table -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-table text-amber-400 bounce-tap"></i> Day-by-Day Error & Hit Breakdown Table
-                    </h2>
-                    <p class="text-xs text-slate-400">Detailed breakdown of code hits, keyword triggers, and dispenser failure counts per date.</p>
-                </div>
-            </div>
-
-            <div class="overflow-x-auto rounded-xl border border-slate-800">
-                <table class="w-full text-left text-xs text-slate-300">
-                    <thead class="bg-slate-950 text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-800">
-                        <tr>
-                            <th scope="col" class="px-4 py-3">Date</th>
-                            <th scope="col" class="px-4 py-3">Dispenser Code Errors (XX:NO NOTES)</th>
-                            <th scope="col" class="px-4 py-3">Monitored Keyword Hits</th>
-                            <th scope="col" class="px-4 py-3">General Dispenser Lines</th>
-                            <th scope="col" class="px-4 py-3 text-right">Total Daily Hits</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dayByDayTableBody" class="divide-y divide-slate-800/60 bg-slate-900">
-                        <tr>
-                            <td colspan="5" class="px-4 py-6 text-center text-slate-500 italic">
-                                No daily date logs available.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        <!-- ERROR BOXES GRID -->
+        <div id="errorGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div class="col-span-full text-center py-12 text-slate-400">
+            <i data-lucide="file-search" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+            <p class="text-sm">No log data analyzed yet. Upload files or load demo logs to view failure counts.</p>
+          </div>
         </div>
+      </section>
 
-        <!-- Secondary Breakdown Cards: Monitored Keywords & Dispenser Failure Lines -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            <!-- Monitored Keyword Failures Separate Quick-Ref List -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <h3 class="text-base font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-key text-rose-400 bounce-tap"></i> Monitored Keyword Failures
-                    </h3>
-                    <span id="keywordTotalBadge" class="text-xs bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2.5 py-0.5 rounded-full font-semibold">0 Hits</span>
-                </div>
-                <div id="monitoredKeywordsList" class="space-y-2 max-h-72 overflow-y-auto pr-1">
-                    <p class="text-xs text-slate-500 italic">No keyword failures detected.</p>
-                </div>
-            </div>
+      <!-- TWO COLUMN LAYOUT FOR CHART & KEYWORDS -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            <!-- Dispenser Failure Lines Separate Quick-Ref List -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <h3 class="text-base font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-triangle-exclamation text-amber-400 bounce-tap"></i> General Dispenser Lines
-                    </h3>
-                    <span id="dispenserLinesTotalBadge" class="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-0.5 rounded-full font-semibold">0 Lines</span>
-                </div>
-                <div id="dispenserLinesList" class="space-y-2 max-h-72 overflow-y-auto pr-1">
-                    <p class="text-xs text-slate-500 italic">No general dispenser failure lines recorded.</p>
-                </div>
+        <!-- KEYWORD & DISPENSER CATEGORIES -->
+        <div class="lg:col-span-1 space-y-6">
+          
+          <!-- KEYWORD FAILURES BOX -->
+          <div class="aesthetic-card rounded-2xl p-5">
+            <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+              <i data-lucide="key" class="w-4 h-4 text-rose-500"></i>
+              Monitored Keyword Failures
+            </h3>
+            <div id="keywordList" class="space-y-2">
+              <div class="text-xs text-slate-400 italic">No failures detected</div>
             </div>
+          </div>
+
+          <!-- DISPENSER FAILURE CATEGORY BOX -->
+          <div class="aesthetic-card rounded-2xl p-5">
+            <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+              <i data-lucide="box" class="w-4 h-4 text-amber-500"></i>
+              Dispenser Failure Lines
+            </h3>
+            <div id="dispenserCategoryList" class="space-y-2">
+              <div class="text-xs text-slate-400 italic">No dispenser failure lines detected</div>
+            </div>
+          </div>
 
         </div>
 
-    </main>
-
-    <!-- Action Points Modal -->
-    <div id="actionModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl relative space-y-4 transform transition-all scale-100">
-            <button id="closeModalBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition">
-                <i class="fa-solid fa-xmark text-lg"></i>
-            </button>
-            
-            <div class="flex items-center gap-3">
-                <div id="modalBadgeIcon" class="p-3 bg-indigo-500/20 text-indigo-400 rounded-xl border border-indigo-500/30">
-                    <i class="fa-solid fa-stethoscope text-xl bounce-tap"></i>
-                </div>
-                <div>
-                    <h3 id="modalTitle" class="text-lg font-bold text-white">Error Action Points</h3>
-                    <p id="modalSubtitle" class="text-xs text-indigo-400 font-mono">CODE EXPLANATION</p>
-                </div>
-            </div>
-
-            <div class="space-y-3 pt-2 border-t border-slate-800">
-                <div>
-                    <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                        <i class="fa-solid fa-magnifying-glass-chart text-amber-400"></i> Primary Root Cause
-                    </h4>
-                    <p id="modalRootCause" class="text-sm text-slate-200 bg-slate-950/70 p-3 rounded-xl border border-slate-800">
-                        Description of root cause...
-                    </p>
-                </div>
-
-                <div>
-                    <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                        <i class="fa-solid fa-wrench text-emerald-400"></i> Technical Action Points & Resolution Steps
-                    </h4>
-                    <ul id="modalActionPoints" class="text-sm text-slate-300 space-y-2 bg-slate-950/70 p-3 rounded-xl border border-slate-800 list-disc list-inside">
-                        <li>Action step 1</li>
-                    </ul>
-                </div>
-
-                <div class="pt-2 flex justify-between items-center text-xs text-slate-500">
-                    <span>Total Occurrences: <strong id="modalHitCount" class="text-white">0</strong></span>
-                    <button id="modalCloseFooter" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-lg transition">Close</button>
-                </div>
-            </div>
+        <!-- DAY BY DAY TREND CHART -->
+        <div class="lg:col-span-2 aesthetic-card rounded-2xl p-5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <i data-lucide="calendar" class="w-4 h-4 text-indigo-500"></i>
+              Daily Failure Trend Analysis
+            </h3>
+            <span class="text-xs text-slate-400">Hits per Log Calendar Date</span>
+          </div>
+          <div class="relative w-full h-64 flex-1">
+            <canvas id="dailyChart"></canvas>
+          </div>
         </div>
+
+      </div>
+
+      <!-- DAY BY DAY DATA TABLE -->
+      <section class="aesthetic-card rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+            <i data-lucide="table" class="w-5 h-5 text-indigo-600"></i>
+            Day-by-Day Error & Hit Breakdown Table
+          </h2>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-slate-600">
+            <thead class="bg-slate-100 text-slate-700 text-xs uppercase font-semibold">
+              <tr>
+                <th class="px-4 py-3 rounded-l-lg">Extracted Date</th>
+                <th class="px-4 py-3">Dispenser Code Errors</th>
+                <th class="px-4 py-3">Keyword Failures</th>
+                <th class="px-4 py-3">Dispenser Category Lines</th>
+                <th class="px-4 py-3 text-right rounded-r-lg">Total Daily Hits</th>
+              </tr>
+            </thead>
+            <tbody id="dailyTableBody" class="divide-y divide-slate-100">
+              <tr>
+                <td colspan="5" class="text-center py-6 text-xs text-slate-400">Upload log files to view day-by-day distribution.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
     </div>
 
-    <!-- Footer -->
-    <footer class="bg-slate-900 border-t border-slate-800 py-4 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
-            ATM Log Diagnostics System &bull; Precision parsing based on <code class="text-indigo-400 font-mono">XX:NO NOTES DISPENSED</code> patterns.
+  </main>
+
+  <!-- ACTION POINTS MODAL -->
+  <div id="actionModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-100 transform transition-all scale-95 opacity-0" id="modalContent">
+      <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center space-x-3">
+          <div id="modalIconContainer" class="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 bounce-tap">
+            <i data-lucide="wrench" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <span id="modalCodeBadge" class="text-xs font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">CODE 00</span>
+            <h3 id="modalTitle" class="text-base font-bold text-slate-900 mt-0.5">Error Description</h3>
+          </div>
         </div>
-    </footer>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors bounce-tap">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
 
-    <!-- Application Script -->
-    <script>
-        // Official Dispenser Error Master Lookup Table (01 - 99)
-        const MASTER_DISPENSER_CODES = {
-            "01": { desc: "DISPENSED SUCCESSFULLY", cause: "Normal dispense operation completed without hardware fault.", actions: ["No action required for successful code."] },
-            "02": { desc: "MOTOR TIMEOUT", cause: "Dispenser drive motor failed to achieve position within required window.", actions: ["Check motor power harness", "Inspect belts and gear assembly for physical jams", "Replace dispenser drive motor PCB if voltage is normal"] },
-            "03": { desc: "SENSOR FAILURE", cause: "Optical timing/note sensors blocked or malfunctioning.", actions: ["Clean sensors with lint-free isopropyl wipes", "Perform sensor calibration in maintenance menu", "Inspect cable connectivity"] },
-            "04": { desc: "PICK FAILURE", cause: "Cassette failed to pick note after maximum retries.", actions: ["Inspect cassette pick rollers for wear", "Verify paper currency fitness", "Refill or re-seat cassette firmly"] },
-            "05": { desc: "DOUBLE PICK DETECTED", cause: "Multiple bills picked simultaneously and diverted.", actions: ["Inspect pick thickness guide setting", "Check reject bin capacity", "Replace worn feed rollers"] },
-            "06": { desc: "DISCARD/REJECT FULL", cause: "Reject/Purge tray has reached maximum capacity.", actions: ["Empty reject cassette", "Reset reject count counter in system diagnostic screen"] },
-            "07": { desc: "DIVERTER TIMEOUT", cause: "Diverter gate failed to switch state in target time.", actions: ["Check diverter solenoid mechanism", "Clean currency passage sensors", "Verify solenoid relay connection"] },
-            "08": { desc: "CASH AT REJECT INLET", cause: "Note stuck in reject pathway before entering bin.", actions: ["Clear note jam along divert chute", "Check reject gate springs"] },
-            "09": { desc: "FEED SENSOR BLOCKED", cause: "Optical sensor covered prior to pick sequence.", actions: ["Remove foreign object/paper scrap from feed sensor", "Clean optical eye"] },
-            "10": { desc: "DISPENSER SHUTTER ERROR", cause: "Exit shutter failed to open or close properly.", actions: ["Check shutter motor and linkage gear", "Inspect shutter safety sensor"] },
-            "11": { desc: "CASH JAM", cause: "Banknote stuck in transport module belts or rollers.", actions: ["Clear physical note jam from transport path", "Check belts for alignment/tension"] },
-            "12": { desc: "CASSETTE 1 EMPTY", cause: "Cassette 1 note level sensor detected zero bills.", actions: ["Replenish cassette 1", "Verify cassette switch sensor"] },
-            "13": { desc: "CASSETTE 2 EMPTY", cause: "Cassette 2 note level sensor detected zero bills.", actions: ["Replenish cassette 2", "Verify cassette switch sensor"] },
-            "14": { desc: "CASSETTE 3 EMPTY", cause: "Cassette 3 note level sensor detected zero bills.", actions: ["Replenish cassette 3", "Verify cassette switch sensor"] },
-            "15": { desc: "CASSETTE 4 EMPTY", cause: "Cassette 4 note level sensor detected zero bills.", actions: ["Replenish cassette 4", "Verify cassette switch sensor"] },
-            "16": { desc: "DISPENSER COMM ERROR", cause: "RS232 / USB communication timeout with main controller.", actions: ["Check comm cable connection", "Restart dispenser module service", "Verify baud rate settings"] },
-            "20": { desc: "DISPENSER POWER FAULT", cause: "24V/36V power line voltage drop or fuse trip.", actions: ["Check power supply unit outputs", "Verify grounding and internal fuses"] },
-            "22": { desc: "CLAMP MECHANISM TIMEOUT", cause: "Stacker clamp failed to retract/extend.", actions: ["Inspect clamp gears", "Check clamp position microswitches"] },
-            "30": { desc: "THICKNESS SENSOR OUT OF CALIBRATION", cause: "LVDT / optical thickness measuring unit baseline drift.", actions: ["Re-calibrate note thickness sensor using reference note"] },
-            "76": { desc: "CAM FIND HOME TO", cause: "Dispenser cam failed to return to home position within time limit.", actions: ["Inspect home sensor optical flag", "Check cam drive belt for slipping or damage", "Check for debris locking the cam shaft"] },
-            "88": { desc: "EEPROM READ FAILURE", cause: "Dispenser mainboard memory corruption or write lock.", actions: ["Reflash firmware", "Replace dispenser logic board if error persists"] },
-            "99": { desc: "UNHANDLED HARDWARE FAULT", cause: "General hardware exception code raised by firmware.", actions: ["Perform full hardware diagnostic test cycle", "Review power supply voltages"] }
-        };
+      <div class="space-y-3">
+        <div class="flex items-center justify-between text-xs bg-slate-50 p-3 rounded-lg border border-slate-100">
+          <span class="text-slate-500 font-medium">Occurrences in Logs:</span>
+          <span id="modalHits" class="font-bold text-indigo-600 text-sm">0 Hits</span>
+        </div>
 
-        // Monitored Keywords List
-        const MONITORED_KEYWORDS = [
-            "Switch conn failure",
-            "app level error",
-            "ATR error",
-            "suspect-1",
-            "suspect-2",
-            "pin encryption failure",
-            "switch resp-timeout",
-            "command reject"
-        ];
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>
+            Recommended Technical Action Points
+          </h4>
+          <ul id="modalActionsList" class="space-y-2 text-xs text-slate-600">
+            <!-- Dynamic Actions -->
+          </ul>
+        </div>
+      </div>
 
-        // Keyword Resolution Mapping for Modal
-        const KEYWORD_ACTION_MAP = {
-            "Switch conn failure": {
-                cause: "Network drop or TCP/IP socket disconnect between ATM terminal and host switch.",
-                actions: ["Inspect router/modem ethernet link", "Verify IP configuration and gateway ping", "Restart switch client daemon"]
-            },
-            "app level error": {
-                cause: "Uncaught application software exception or invalid state machine execution.",
-                actions: ["Review application log trace", "Restart ATM software shell", "Verify terminal configuration files"]
-            },
-            "ATR error": {
-                cause: "Smart card reader Answer To Reset failure (card chip read failure).",
-                actions: ["Clean IC card reader contact pins", "Check reader microswitch", "Replace card reader module if issues continue"]
-            },
-            "suspect-1": {
-                cause: "Currency validation flagged suspect note pattern level 1 during validation.",
-                actions: ["Inspect divert/reject bin", "Run bill validator calibration with official test notes"]
-            },
-            "suspect-2": {
-                cause: "High-confidence suspect/counterfeit note detected during stack.",
-                actions: ["Isolate suspect note in designated storage", "Check UV/magnetic sensor optics"]
-            },
-            "pin encryption failure": {
-                cause: "Encrypted PIN Pad (EPP) key sync error or HSM rejection.",
-                actions: ["Reload EPP master keys", "Check EPP tamper state", "Ensure EPP firmware matches host version"]
-            },
-            "switch resp-timeout": {
-                cause: "Host switch failed to send response message within defined threshold.",
-                actions: ["Check host switch status", "Inspect network latency/bandwidth", "Verify timeout settings in config"]
-            },
-            "command reject": {
-                cause: "Dispenser controller rejected command sequence sent by application.",
-                actions: ["Verify firmware version compatibility", "Check sequence state before sending dispense command"]
-            }
-        };
+      <div class="pt-2 flex justify-end">
+        <button onclick="closeModal()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-4 py-2 rounded-lg bounce-tap transition-all">
+          Close Diagnostics
+        </button>
+      </div>
+    </div>
+  </div>
 
-        // Global State Store
-        let state = {
-            fileCount: 0,
-            totalLines: 0,
-            parsedDates: new Set(),
-            dispenserCodeHits: {}, // { "02": count, "76": count ... }
-            keywordHits: {},       // { "Switch conn failure": count ... }
-            dispenserLineHits: 0,  // count of generic dispenser failure lines
-            dispenserLinesList: [],// Array of sample lines
-            dailyBreakdown: {},    // { "2026-10-17": { dispenser: 0, keyword: 0, lines: 0, total: 0 } }
-            unifiedList: []        // Array of all items sorted by hits
-        };
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-200 py-4 mt-8">
+    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+      ATM Log Intelligence & Failure Diagnostics Engine • Professional Edition
+    </div>
+  </footer>
 
-        let dailyChartInstance = null;
+  <!-- APPLICATION JAVASCRIPT LOGIC -->
+  <script>
+    // MASTER DISPENSER ERROR CODE MAP (01-99)
+    const MASTER_ERROR_MAP = {
+      1: { name: "DISPENSED SUCCESSFULLY", category: "Success", action: "Normal operation. No action required." },
+      2: { name: "MOTOR TIMEOUT", category: "Hardware", action: "Check dispenser motor power supply and cable connectors. Inspect drive gears and belts for jams." },
+      3: { name: "SENSOR FAILURE", category: "Hardware", action: "Clean optical sensor lenses with isopropyl alcohol. Verify wiring harness continuity." },
+      4: { name: "MAX TWIN LIMIT EXCEEDED", category: "Cash Operations", action: "Recalibrate double-note/twin sensor. Inspect banknotes for proper fitness quality." },
+      5: { name: "PRESENTED SUCCESSFULLY", category: "Success", action: "Normal operation. Cash successfully presented to customer." },
+      6: { name: "PRESENTATION TRAY NOT HOMED", category: "Mechanical", action: "Inspect presentation tray position sensor. Clear foreign debris from tray guides." },
+      7: { name: "BULK PURGE SUCCESSFULL", category: "Success", action: "Normal operation. Cash purged to reject bin." },
+      8: { name: "MOTOR TIMEOUT NOT HOMED", category: "Hardware", action: "Inspect home position limit switch. Check motor drive circuitry." },
+      9: { name: "DISPENSER INITIALIZED", category: "Info", action: "Normal operation." },
+      10: { name: "DISPENSER NOT INITIALIZED", category: "Configuration", action: "Send initialization command from terminal software. Verify controller firmware." },
+      11: { name: "CASH JAM", category: "Critical Cash Jam", action: "Clear banknotes from transport chute manually. Check feed roller tension." },
+      12: { name: "NO CASH ON TRAY", category: "Cash Operations", action: "Verify pick module belts. Ensure cassette contains notes and pick mechanism is functional." },
+      13: { name: "SUSPECT CASH PICKEDUP", category: "Cash Operations", action: "Inspect suspect note compartment. Clean double detect / thickness sensors." },
+      14: { name: "CASH JAM NOT HOMED", category: "Critical Cash Jam", action: "Clear physical obstruction in presenter. Reset clamp mechanism home sensor." },
+      15: { name: "CASSETTE NOT ENABLED", category: "Configuration", action: "Enable cassette in terminal supervisor setup menu." },
+      16: { name: "NO NOTE LIMIT EXCEEDED", category: "Cash Operations", action: "Replenish cassette with notes and update note counters." },
+      17: { name: "NOTE THRESHOLD NOT SET", category: "Configuration", action: "Perform note thickness measurement and threshold calibration." },
+      18: { name: "DRIFT ERROR", category: "Sensors", action: "Recalibrate double detect optical sensors to fix signal drift." },
+      19: { name: "CALIB PROFILE MATCH", category: "Info", action: "Calibration verified." },
+      20: { name: "CALIBRATION NOT DONE", category: "Configuration", action: "Perform currency calibration for all active cassettes." },
+      21: { name: "CALIB THRES SEL FAILED", category: "Configuration", action: "Retry calibration using crisp, undamaged sample banknotes." },
+      22: { name: "PROFILE ITER LIMIT EXCEEDED", category: "Sensors", action: "Clean optical sensors. Check for ambient light interference." },
+      23: { name: "LESS SAMP ITR EXCEEDED", category: "Sensors", action: "Insert at least 20 sample notes into cassette and retry calibration." },
+      24: { name: "CASSETTE TYPE SENSOR FAILURE PULLUP PULLDOWN", category: "Hardware", action: "Check cassette microswitch wiring and backplane connectors." },
+      25: { name: "FLASH ERROR", category: "Firmware", action: "Re-flash dispenser firmware. Replace main control board if error persists." },
+      26: { name: "COUNTING LEFT UPPER DRIFT", category: "Sensors", action: "Clean upper-left counting sensor optics." },
+      27: { name: "COUNTING LEFT LOWER DRIFT", category: "Sensors", action: "Clean lower-left counting sensor optics." },
+      28: { name: "COUNTING RIGHT UPPER DRIFT", category: "Sensors", action: "Clean upper-right counting sensor optics." },
+      29: { name: "COUNTING RIGHT LOWER DRIFT", category: "Sensors", action: "Clean lower-right counting sensor optics." },
+      30: { name: "REAR SKEW LEFT UPPER DRIFT", category: "Sensors", action: "Clean rear skew upper-left sensor array." },
+      31: { name: "REAR SKEW LEFT LOWER DRIFT", category: "Sensors", action: "Clean rear skew lower-left sensor array." },
+      32: { name: "REAR SKEW RIGHT UPPER DRIFT", category: "Sensors", action: "Clean rear skew upper-right sensor array." },
+      33: { name: "REAR SKEW RIGHT LOWER DRIFT", category: "Sensors", action: "Clean rear skew lower-right sensor array." },
+      34: { name: "PREV TRANS CASH IN TRAY", category: "Cash Operations", action: "Clear forgotten cash from presentation tray or clean tray optical sensor." },
+      35: { name: "DISP INIT SUCCESS PREV CASH BP SUCCESS", category: "Info", action: "Forgotten cash purged successfully during startup." },
+      36: { name: "DISP INIT FAIL PREV CASH BP SUCCESS", category: "Hardware", action: "Dispenser failed initialization after bulk purge. Re-initialize module." },
+      37: { name: "DISP INIT FAIL PREV CASH BP FAIL", category: "Critical Cash Jam", action: "Clear jammed notes in bulk purge chute and restart unit." },
+      38: { name: "PREV TRANS CASH TAKEN", category: "Info", action: "Cash collected by user." },
+      39: { name: "CARTRIDGE HOMED", category: "Info", action: "Cartridge positioned successfully." },
+      40: { name: "SAFE SHUTTER OPEN FAILS", category: "Hardware", action: "Check safe shutter solenoid drive and physical rails for obstruction." },
+      41: { name: "SAFE SHUTTER CLOSE FAILS", category: "Hardware", action: "Check shutter optical safety sensor and clearance path." },
+      42: { name: "CARTRIDGE POSITION ERROR", category: "Hardware", action: "Re-seat cassette and verify guide rail locks." },
+      43: { name: "CAM POSITION ERROR", category: "Mechanical", action: "Inspect CAM mechanism home sensor and gear teeth." },
+      44: { name: "PURGE BIN NOT INSERTED", category: "Hardware", action: "Insert purge bin properly and verify microswitch contact." },
+      45: { name: "CASSETTE INSERTION PROBLEM", category: "Hardware", action: "Inspect cassette latch and connector pins." },
+      46: { name: "TWIN SENSOR NOISE UPPER DRIFT", category: "Sensors", action: "Check twin sensor electrical shield and ground connection." },
+      47: { name: "BILL MOVE TO PRESENTER FAIL", category: "Transport", action: "Inspect transport rollers and divert solenoid for slipping." },
+      48: { name: "PURGEBIN LID CONFIG MIS MATCH", category: "Configuration", action: "Verify purge bin lid lock configuration switches." },
+      49: { name: "RETRACT CLR BEFORE PRESENT BLK", category: "Transport", action: "Perform retract clearing cycle before presentation." },
+      50: { name: "TOTAL NOTE COUNT OUTOF RANGE", category: "Configuration", action: "Adjust max dispense limit in host application parameters." },
+      51: { name: "NOTE WIDTH OUTOF RANGE", category: "Sensors", action: "Adjust cassette side note guides to fit currency dimensions." },
+      52: { name: "CART IN SBL APP", category: "Info", action: "Cartridge in single bill loading state." },
+      53: { name: "CART COMM ERROR", category: "Communication", action: "Check serial/I2C communication harness to cassette board." },
+      54: { name: "CASSETTE TYPE SENSOR FAILURE COMBINATION", category: "Hardware", action: "Replace cassette size detection microswitch assembly." },
+      55: { name: "INTER CASSETTE MOVE ERROR", category: "Transport", action: "Check vertical transport path between cassettes." },
+      56: { name: "CALIB CASSETTE TYPE MISMATCH", category: "Configuration", action: "Ensure cassette denomination matches software settings." },
+      57: { name: "CARTRIDGE FWF UPDATE SUCCESS", category: "Info", action: "Firmware update completed." },
+      58: { name: "CARTRIDGE DATA SENT FAIL", category: "Communication", action: "Retry data transfer to cartridge EEPROM." },
+      59: { name: "CARTRIDGE DATA RECEV FAIL", category: "Communication", action: "Check cassette connector pin contact." },
+      60: { name: "CARTRIDGE INVALID DATA RECEIVED", category: "Communication", action: "Reset cartridge memory module." },
+      61: { name: "CARTRIDGE DATA SENT SUCCESS", category: "Info", action: "Data transfer verified." },
+      62: { name: "CARTRIDGE CHECKSUM FAIL", category: "Firmware", action: "Re-write cassette parameter block." },
+      63: { name: "MAX PEEP PURGE LIMIT EXCEED", category: "Cash Operations", action: "Purge bin is full. Empty bin and reset reject counters." },
+      64: { name: "PURGE BIN LID OPEN FAIL", category: "Hardware", action: "Check purge bin lid solenoid mechanism." },
+      65: { name: "PURGE BIN LID CLOSE FAIL", category: "Hardware", action: "Inspect lid latch spring and position sensor." },
+      66: { name: "ACK RX FAIL FOR SHUTTER OPEN", category: "Communication", action: "Check shutter interface cable connection." },
+      67: { name: "COMMAND VERSION MISMATCH", category: "Firmware", action: "Upgrade dispenser firmware or terminal API driver." },
+      68: { name: "CCM VER UNSUPPORT MISMATCH", category: "Firmware", action: "Flash supported firmware build to CCM controller." },
+      69: { name: "FID A CARD REMOVE TIMEOUT", category: "Card Reader", action: "Inspect motorized card reader entry slot." },
+      70: { name: "NOT IN SESSION", category: "System State", action: "Restart terminal application session." },
+      71: { name: "PAIRING REQUEST EXHAUSTED", category: "Communication", action: "Re-pair security board with main dispenser controller." },
+      72: { name: "SESSION DETAILS MISMATCH", category: "System State", action: "Clear local session cache and re-authenticate." },
+      73: { name: "DOOR OPEN IDENTIFIED", category: "Security", action: "Check safe cabinet door switch." },
+      74: { name: "NO CASH ON TRAY - PRESENT BLOCK BEFORE CASH PRESENT", category: "Transport", action: "Check pick module drive. Notes did not reach tray before presentation." },
+      75: { name: "NO CASH ON TRAY - RETRACT CLEAR BEFORE CASH PRESENT", category: "Transport", action: "Inspect retract channel for dropped bills." },
+      76: { name: "CAM FIND HOME TO", category: "Mechanical Timeout", action: "Check CAM motor assembly and home sensor." },
+      77: { name: "CAM DISPENSE TO CLAMP TO", category: "Mechanical Timeout", action: "Inspect clamp assembly drive belt." },
+      78: { name: "CAM CLAMP TO PRESENT TO", category: "Mechanical Timeout", action: "Check presenter shaft gears and motor drive." },
+      79: { name: "CAM PRESENT TO BP TO", category: "Mechanical Timeout", action: "Check bulk purge pathway from presenter." },
+      80: { name: "CAM DISPENSE TO PURGE TO", category: "Mechanical Timeout", action: "Inspect divert flap actuator." },
+      81: { name: "CAM BP TO DISPENSE TO", category: "Mechanical Timeout", action: "Check CAM return stroke mechanics." },
+      82: { name: "CART FIND HOME TO", category: "Mechanical Timeout", action: "Check cartridge home sensor and motor." },
+      83: { name: "CART C2P TO (cassette to present)", category: "Mechanical Timeout", action: "Note transport timeout from cassette to presenter. Check roller wear." },
+      84: { name: "I2C COMM ERROR (DLDR)", category: "Hardware/Communication", action: "Replace internal I2C ribbon cable." },
+      85: { name: "LED FAILURE (DLDR)", category: "Hardware", action: "Replace LED sensor board." },
+      86: { name: "CART P2BP TO (Present to Bulk purge)", category: "Mechanical Timeout", action: "Inspect bulk purge chute for paper jams." },
+      87: { name: "DISPENSER TIMEOUT FAULT", category: "Hardware", action: "General dispenser response timeout. Restart module." },
+      88: { name: "HIGH SKEW DETECTED", category: "Sensors", action: "Clean skew detection sensors and check pick belt alignment." },
+      89: { name: "DISPENSE PATH OBSTRUCTION", category: "Mechanical", action: "Inspect transport belts for foreign matter." },
+      90: { name: "CASSETTE INTERLOCK OPEN", category: "Hardware", action: "Ensure cassette is fully locked in position." },
+      91: { name: "REJECT BIN NEAR FULL", category: "Cash Operations", action: "Plan maintenance visit to empty reject bin." },
+      92: { name: "SOLENOID DRIVE FAULT", category: "Hardware", action: "Check divert solenoid board circuit." },
+      93: { name: "OPTICAL COVER DUSTED", category: "Sensors", action: "Clean all optical sensor windows." },
+      94: { name: "POWER VOLTAGE DROP", category: "Power", action: "Check ATM power supply output voltages (24V/12V DC)." },
+      95: { name: "MAIN MOTOR OVERCURRENT", category: "Hardware", action: "Check main motor for mechanical binding." },
+      96: { name: "DISPENSER LOCK FAILURE", category: "Mechanical", action: "Inspect mechanical cassette lock mechanism." },
+      97: { name: "REQ NOT REACHED TO CDM", category: "Communication", action: "Check CDM board connection to terminal PC." },
+      98: { name: "COMMUNICATION BUS ERROR", category: "Communication", action: "Inspect USB/RS232 communication cables." },
+      99: { name: "UNKNOWN ERROR", category: "Unhandled", action: "Consult manufacturer hardware logs." }
+    };
 
-        // Initialize application
-        document.addEventListener('DOMContentLoaded', () => {
-            setupEventListeners();
-            initChart();
+    const KEYWORD_TARGETS = [
+      "Switch conn failure",
+      "app level error",
+      "ATR error",
+      "suspect-1",
+      "suspect-2",
+      "pin encryption failure",
+      "switch resp-timeout",
+      "command reject"
+    ];
+
+    // Regex to match DISPENSER FAILURE (...) pattern exactly
+    const DISPENSER_FAILURE_REGEX = /DISPENSER\s+FAILURE\s*\(([^)]+)\)/gi;
+
+    // Multi-format Date Extractor
+    const DATE_PATTERNS = [
+      /(\d{4}[-_/.]\d{2}[-_/.]\d{2})/,   // YYYY-MM-DD or YYYY_MM_DD
+      /(\d{2}[-_/.]\d{2}[-_/.]\d{4})/,   // DD-MM-YYYY
+      /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\b/i
+    ];
+
+    let analysisData = {
+      totalEvents: 0,
+      processedFileCount: 0,
+      codeErrors: {},     
+      keywordErrors: {},  
+      dispenserErrors: {},
+      dailyTrend: {},     
+      detailedRecords: [] 
+    };
+
+    let dailyChartInstance = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+      initChart();
+    });
+
+    async function handleFileUpload(event) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+
+      showProcessing(true, "Reading uploaded log file(s)...");
+      resetDataStore();
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.name.toLowerCase().endsWith(".zip")) {
+          await processZipFile(file);
+        } else {
+          analysisData.processedFileCount++;
+          const content = await readFileAsText(file);
+          processLogContent(content, file.name);
+        }
+      }
+
+      showProcessing(false);
+      renderDashboard();
+    }
+
+    function readFileAsText(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = (e) => reject(e);
+        reader.readAsText(file);
+      });
+    }
+
+    async function processZipFile(zipFile) {
+      try {
+        const zip = new JSZip();
+        const unzipped = await zip.loadAsync(zipFile);
+        const fileKeys = Object.keys(unzipped.files).filter(fn => !unzipped.files[fn].dir && (fn.endsWith('.log') || fn.endsWith('.txt')));
+        
+        analysisData.processedFileCount += fileKeys.length;
+
+        for (const filename of fileKeys) {
+          const content = await unzipped.files[filename].async("text");
+          processLogContent(content, filename);
+        }
+      } catch (err) {
+        console.error("ZIP processing error:", err);
+        alert("Error reading ZIP archive: " + zipFile.name);
+      }
+    }
+
+    function resetDataStore() {
+      analysisData = {
+        totalEvents: 0,
+        processedFileCount: 0,
+        codeErrors: {},
+        keywordErrors: {},
+        dispenserErrors: {},
+        dailyTrend: {},
+        detailedRecords: []
+      };
+    }
+
+    function processLogContent(text, fileName) {
+      const fileDateMatch = extractDateString(fileName);
+      const lines = text.split(/\r?\n/);
+
+      lines.forEach((line) => {
+        if (!line.trim()) return;
+
+        const lineDateMatch = extractDateString(line);
+        const dateStr = lineDateMatch || fileDateMatch || "Undated Logs";
+
+        let lineMatched = false;
+
+        // DISPENSER FAILURE PARSING
+        let dispMatch;
+        DISPENSER_FAILURE_REGEX.lastIndex = 0;
+        while ((dispMatch = DISPENSER_FAILURE_REGEX.exec(line)) !== null) {
+          const rawBracketContent = dispMatch[1].trim(); 
+          analysisData.dispenserErrors[rawBracketContent] = (analysisData.dispenserErrors[rawBracketContent] || 0) + 1;
+          lineMatched = true;
+
+          const codeMatch = rawBracketContent.match(/^(0[1-9]|[1-9][0-9])\b/);
+          if (codeMatch) {
+            const codeNum = parseInt(codeMatch[1], 10);
+            analysisData.codeErrors[codeNum] = (analysisData.codeErrors[codeNum] || 0) + 1;
+            const codeInfo = MASTER_ERROR_MAP[codeNum] || { name: rawBracketContent };
+            recordEvent(dateStr, 'code', codeNum, codeInfo.name, line, fileName);
+          } else {
+            recordEvent(dateStr, 'dispenser', rawBracketContent, rawBracketContent, line, fileName);
+          }
+        }
+
+        // MONITORED KEYWORDS
+        KEYWORD_TARGETS.forEach(keyword => {
+          if (line.toLowerCase().includes(keyword.toLowerCase())) {
+            analysisData.keywordErrors[keyword] = (analysisData.keywordErrors[keyword] || 0) + 1;
+            lineMatched = true;
+            recordEvent(dateStr, 'keyword', keyword, keyword, line, fileName);
+          }
         });
 
-        function setupEventListeners() {
-            const fileInput = document.getElementById('logFileInput');
-            fileInput.addEventListener('change', handleFileSelect);
-
-            document.getElementById('btnLoadDemo').addEventListener('click', loadDemoLogs);
-            document.getElementById('btnExportExcel').addEventListener('click', exportToExcel);
-
-            // Modal events
-            document.getElementById('closeModalBtn').addEventListener('click', closeModal);
-            document.getElementById('modalCloseFooter').addEventListener('click', closeModal);
-            document.getElementById('actionModal').addEventListener('click', (e) => {
-                if (e.target.id === 'actionModal') closeModal();
-            });
+        if (lineMatched) {
+          analysisData.totalEvents++;
         }
+      });
+    }
 
-        // Processing Selected Files (Supports Text & ZIPs)
-        async function handleFileSelect(e) {
-            const files = e.target.files;
-            if (!files || files.length === 0) return;
-
-            resetState();
-
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                if (file.name.endsWith('.zip')) {
-                    await processZipFile(file);
-                } else {
-                    const content = await readFileAsText(file);
-                    const fileDate = extractDateFromFilename(file.name) || formatDate(new Date(file.lastModified));
-                    processLogContent(content, fileDate);
-                    state.fileCount++;
-                }
-            }
-
-            finalizeAnalytics();
+    function extractDateString(str) {
+      if (!str) return null;
+      for (const pattern of DATE_PATTERNS) {
+        const match = str.match(pattern);
+        if (match) {
+          return match[1].replace(/_/g, '-');
         }
+      }
+      return null;
+    }
 
-        function resetState() {
-            state = {
-                fileCount: 0,
-                totalLines: 0,
-                parsedDates: new Set(),
-                dispenserCodeHits: {},
-                keywordHits: {},
-                dispenserLineHits: 0,
-                dispenserLinesList: [],
-                dailyBreakdown: {},
-                unifiedList: []
-            };
-            MONITORED_KEYWORDS.forEach(kw => state.keywordHits[kw] = 0);
+    function recordEvent(dateStr, type, key, title, line, fileName) {
+      if (!analysisData.dailyTrend[dateStr]) {
+        analysisData.dailyTrend[dateStr] = { total: 0, code: 0, keyword: 0, dispenser: 0 };
+      }
+      analysisData.dailyTrend[dateStr].total++;
+      analysisData.dailyTrend[dateStr][type]++;
+
+      analysisData.detailedRecords.push({
+        Date: dateStr,
+        SourceFile: fileName,
+        Type: type.toUpperCase(),
+        Key: key,
+        Description: title,
+        RawLogLine: line.trim()
+      });
+    }
+
+    function renderDashboard() {
+      document.getElementById("statTotalEvents").innerText = analysisData.totalEvents.toLocaleString();
+      document.getElementById("statLogFiles").innerText = analysisData.processedFileCount.toLocaleString();
+
+      const totalCodeHits = Object.values(analysisData.codeErrors).reduce((a, b) => a + b, 0);
+      const totalKeywordHits = Object.values(analysisData.keywordErrors).reduce((a, b) => a + b, 0);
+      const totalDispenserHits = Object.values(analysisData.dispenserErrors).reduce((a, b) => a + b, 0);
+
+      document.getElementById("statCodeErrors").innerText = totalCodeHits.toLocaleString();
+      document.getElementById("statKeywordErrors").innerText = totalKeywordHits.toLocaleString();
+      document.getElementById("statDispenserErrors").innerText = totalDispenserHits.toLocaleString();
+
+      if (analysisData.totalEvents > 0) {
+        document.getElementById("exportExcelBtn").classList.remove("hidden");
+      }
+
+      renderErrorGrid();
+      renderKeywordList();
+      renderDispenserList();
+      renderDailyTableAndChart();
+
+      lucide.createIcons();
+    }
+
+    function renderErrorGrid() {
+      const grid = document.getElementById("errorGrid");
+      grid.innerHTML = "";
+
+      const sortedErrors = Object.entries(analysisData.codeErrors)
+        .map(([codeNum, count]) => {
+          const num = parseInt(codeNum, 10);
+          return {
+            codeNum: num,
+            formattedCode: num < 10 ? `0${num}` : `${num}`,
+            count,
+            info: MASTER_ERROR_MAP[num] || { name: "DISPENSER FAILURE", action: "Inspect hardware module." }
+          };
+        })
+        .sort((a, b) => b.count - a.count);
+
+      document.getElementById("errorTypeCount").innerText = `${sortedErrors.length} Unique Codes Detected`;
+
+      if (sortedErrors.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full text-center py-12 text-slate-400">
+            <i data-lucide="check-circle" class="w-10 h-10 mx-auto mb-2 text-emerald-400"></i>
+            <p class="text-sm font-medium">No valid numeric dispenser failure codes found in analyzed log files.</p>
+          </div>
+        `;
+        return;
+      }
+
+      sortedErrors.forEach(({ formattedCode, count, info }) => {
+        const card = document.createElement("div");
+        card.className = "aesthetic-card rounded-xl p-4 hover:shadow-md transition-all cursor-pointer border border-slate-200/80 hover:border-indigo-300 bounce-tap group relative overflow-hidden";
+        card.onclick = () => openActionModal(formattedCode, count, info);
+
+        const badgeColor = count > 10 ? "bg-rose-100 text-rose-700" : "bg-indigo-50 text-indigo-700";
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between mb-2">
+            <span class="text-xs font-bold px-2.5 py-1 rounded-md ${badgeColor}">
+              CODE ${formattedCode}
+            </span>
+            <span class="text-xs font-bold text-slate-500 group-hover:text-indigo-600 transition-colors flex items-center gap-1">
+              <i data-lucide="zap" class="w-3 h-3"></i>
+              ${count} Hits
+            </span>
+          </div>
+          <h4 class="text-xs font-bold text-slate-800 line-clamp-2 uppercase tracking-tight group-hover:text-indigo-600 transition-colors">
+            ${info.name}
+          </h4>
+          <p class="text-[11px] text-slate-400 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
+            <span>Action Points</span>
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-1 transition-transform"></i>
+          </p>
+        `;
+
+        grid.appendChild(card);
+      });
+    }
+
+    function renderKeywordList() {
+      const container = document.getElementById("keywordList");
+      container.innerHTML = "";
+
+      const sortedKeywords = Object.entries(analysisData.keywordErrors)
+        .sort((a, b) => b[1] - a[1]);
+
+      if (sortedKeywords.length === 0) {
+        container.innerHTML = `<div class="text-xs text-slate-400 italic">No keyword failures detected</div>`;
+        return;
+      }
+
+      sortedKeywords.forEach(([keyword, hits]) => {
+        const item = document.createElement("div");
+        item.className = "flex items-center justify-between text-xs bg-rose-50/50 hover:bg-rose-50 border border-rose-100 rounded-lg p-2.5 transition-colors";
+        item.innerHTML = `
+          <span class="font-semibold text-rose-800 flex items-center gap-1.5">
+            <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-rose-500"></i>
+            ${keyword}
+          </span>
+          <span class="font-bold text-rose-600 bg-white px-2 py-0.5 rounded shadow-xs border border-rose-100">${hits} hits</span>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function renderDispenserList() {
+      const container = document.getElementById("dispenserCategoryList");
+      container.innerHTML = "";
+
+      const sortedDispenser = Object.entries(analysisData.dispenserErrors)
+        .sort((a, b) => b[1] - a[1]);
+
+      if (sortedDispenser.length === 0) {
+        container.innerHTML = `<div class="text-xs text-slate-400 italic">No dispenser failure lines detected</div>`;
+        return;
+      }
+
+      sortedDispenser.forEach(([lineText, hits]) => {
+        const item = document.createElement("div");
+        item.className = "flex items-center justify-between text-xs bg-amber-50/50 hover:bg-amber-50 border border-amber-100 rounded-lg p-2.5 transition-colors";
+        item.innerHTML = `
+          <span class="font-medium text-amber-900 truncate max-w-[200px]" title="${lineText}">
+            ${lineText}
+          </span>
+          <span class="font-bold text-amber-700 bg-white px-2 py-0.5 rounded shadow-xs border border-amber-100">${hits} hits</span>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function renderDailyTableAndChart() {
+      const tbody = document.getElementById("dailyTableBody");
+      tbody.innerHTML = "";
+
+      const sortedDates = Object.keys(analysisData.dailyTrend).sort();
+
+      if (sortedDates.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-xs text-slate-400">No dated records available.</td></tr>`;
+        updateChart([], []);
+        return;
+      }
+
+      const chartLabels = [];
+      const chartTotals = [];
+
+      sortedDates.forEach(date => {
+        const day = analysisData.dailyTrend[date];
+        chartLabels.push(date);
+        chartTotals.push(day.total);
+
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition-colors";
+        tr.innerHTML = `
+          <td class="px-4 py-3 font-semibold text-slate-800 text-xs">${date}</td>
+          <td class="px-4 py-3 text-indigo-600 font-medium">${day.code || 0}</td>
+          <td class="px-4 py-3 text-rose-600 font-medium">${day.keyword || 0}</td>
+          <td class="px-4 py-3 text-amber-600 font-medium">${day.dispenser || 0}</td>
+          <td class="px-4 py-3 text-right font-bold text-slate-900">${day.total}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      updateChart(chartLabels, chartTotals);
+    }
+
+    function initChart() {
+      const ctx = document.getElementById('dailyChart').getContext('2d');
+      dailyChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Daily Failures',
+            data: [],
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.08)',
+            fill: true,
+            tension: 0.35,
+            borderWidth: 2,
+            pointBackgroundColor: '#4f46e5',
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+            y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } }, beginAtZero: true }
+          }
         }
+      });
+    }
 
-        function readFileAsText(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.onerror = (err) => reject(err);
-                reader.readAsText(file);
-            });
-        }
+    function updateChart(labels, data) {
+      if (!dailyChartInstance) return;
+      dailyChartInstance.data.labels = labels;
+      dailyChartInstance.data.datasets[0].data = data;
+      dailyChartInstance.update();
+    }
 
-        async function processZipFile(zipFile) {
-            try {
-                const zip = new JSZip();
-                const zipContent = await zip.loadAsync(zipFile);
-                const fileEntries = Object.keys(zipContent.files);
+    function openActionModal(formattedCode, count, info) {
+      document.getElementById("modalCodeBadge").innerText = `CODE ${formattedCode}`;
+      document.getElementById("modalTitle").innerText = info.name;
+      document.getElementById("modalHits").innerText = `${count} Occurrence Hits`;
 
-                for (const filename of fileEntries) {
-                    const zipEntry = zipContent.files[filename];
-                    if (!zipEntry.dir && (filename.endsWith('.log') || filename.endsWith('.txt'))) {
-                        const content = await zipEntry.async('string');
-                        const fileDate = extractDateFromFilename(filename) || (zipEntry.date ? formatDate(zipEntry.date) : formatDate(new Date()));
-                        processLogContent(content, fileDate);
-                        state.fileCount++;
-                    }
-                }
-            } catch (err) {
-                console.error("Error unzipping file:", err);
-                alert("Could not process ZIP file: " + err.message);
-            }
-        }
+      const actionsList = document.getElementById("modalActionsList");
+      actionsList.innerHTML = "";
 
-        // Core Strict Log Parsing Routine
-        function processLogContent(text, fallbackDate) {
-            const lines = text.split(/\r?\n/);
-            state.totalLines += lines.length;
+      const steps = info.action.split('. ').filter(s => s.trim().length > 0);
+      steps.forEach(step => {
+        const li = document.createElement("li");
+        li.className = "flex items-start gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100";
+        li.innerHTML = `
+          <i data-lucide="wrench" class="w-4 h-4 text-indigo-500 mt-0.5 shrink-0"></i>
+          <span>${step.endsWith('.') ? step : step + '.'}</span>
+        `;
+        actionsList.appendChild(li);
+      });
 
-            lines.forEach(line => {
-                const trimmed = line.trim();
-                if (!trimmed) return;
+      lucide.createIcons();
 
-                // 1. Extract Date from line or fallback
-                const dateFound = extractDateFromLine(trimmed) || fallbackDate;
-                state.parsedDates.add(dateFound);
+      const modal = document.getElementById("actionModal");
+      const content = document.getElementById("modalContent");
+      modal.classList.remove("hidden");
+      setTimeout(() => {
+        content.classList.remove("scale-95", "opacity-0");
+        content.classList.add("scale-100", "opacity-100");
+      }, 10);
+    }
 
-                if (!state.dailyBreakdown[dateFound]) {
-                    state.dailyBreakdown[dateFound] = { dispenser: 0, keyword: 0, lines: 0, total: 0 };
-                }
+    function closeModal() {
+      const modal = document.getElementById("actionModal");
+      const content = document.getElementById("modalContent");
+      content.classList.remove("scale-100", "opacity-100");
+      content.classList.add("scale-95", "opacity-0");
+      setTimeout(() => {
+        modal.classList.add("hidden");
+      }, 150);
+    }
 
-                let lineMatchedAny = false;
+    function exportToExcel() {
+      if (analysisData.detailedRecords.length === 0) {
+        alert("No records available to export!");
+        return;
+      }
 
-                // STRICT RULE 1: Match XX:NO NOTES DISPENSED pattern only
-                // Valid patterns: "02:NO NOTES DISPENSED", "DISPENSER FAILURE (02:NO NOTES DISPENSED)", etc.
-                const noNotesRegex = /(?:^|\b|\()(\d{1,2})\s*:\s*NO\s+NOTES\s+DISPENSED\b/i;
-                const codeMatch = trimmed.match(noNotesRegex);
+      const summaryData = [
+        ["ATM Log Diagnostic Executive Report"],
+        ["Generated Date", new Date().toLocaleString()],
+        ["Total Analyzed Events", analysisData.totalEvents],
+        ["Total Log Files Processed", analysisData.processedFileCount],
+        [],
+        ["Error Code", "Description", "Hit Count", "Recommended Action"],
+        ...Object.entries(analysisData.codeErrors).map(([code, hits]) => {
+          const num = parseInt(code, 10);
+          const formatted = num < 10 ? `0${num}` : `${num}`;
+          return [
+            `CODE ${formatted}`,
+            MASTER_ERROR_MAP[num]?.name || "DISPENSER FAILURE",
+            hits,
+            MASTER_ERROR_MAP[num]?.action || ""
+          ];
+        })
+      ];
 
-                if (codeMatch) {
-                    let codeNum = codeMatch[1].padStart(2, '0'); // convert '2' to '02'
-                    
-                    // Check if it's a known code in our master lookup 01-99
-                    if (MASTER_DISPENSER_CODES[codeNum]) {
-                        state.dispenserCodeHits[codeNum] = (state.dispenserCodeHits[codeNum] || 0) + 1;
-                        state.dailyBreakdown[dateFound].dispenser++;
-                        state.dailyBreakdown[dateFound].total++;
-                        lineMatchedAny = true;
-                    } else {
-                        // Numeric code present but unmapped/unknown code => Categorize as generic Dispenser Failure
-                        state.dispenserLineHits++;
-                        state.dispenserLinesList.push(`[${dateFound}] ${trimmed}`);
-                        state.dailyBreakdown[dateFound].lines++;
-                        state.dailyBreakdown[dateFound].total++;
-                        lineMatchedAny = true;
-                    }
-                } else if (/NO\s+NOTES\s+DISPENSED/i.test(trimmed) || /DISPENSER\s+FAILURE/i.test(trimmed)) {
-                    // Lines containing :NO NOTES DISPENSED without valid prefix code or containing DISPENSER FAILURE
-                    state.dispenserLineHits++;
-                    if (state.dispenserLinesList.length < 100) {
-                        state.dispenserLinesList.push(`[${dateFound}] ${trimmed}`);
-                    }
-                    state.dailyBreakdown[dateFound].lines++;
-                    state.dailyBreakdown[dateFound].total++;
-                    lineMatchedAny = true;
-                }
+      const keywordData = [
+        ["Keyword Failure", "Total Hits"],
+        ...Object.entries(analysisData.keywordErrors).map(([kw, hits]) => [kw, hits])
+      ];
 
-                // STRICT RULE 2: Check Monitored Keywords
-                MONITORED_KEYWORDS.forEach(keyword => {
-                    const regex = new RegExp('\\b' + escapeRegExp(keyword) + '\\b', 'i');
-                    if (regex.test(trimmed)) {
-                        state.keywordHits[keyword] = (state.keywordHits[keyword] || 0) + 1;
-                        state.dailyBreakdown[dateFound].keyword++;
-                        state.dailyBreakdown[dateFound].total++;
-                        lineMatchedAny = true;
-                    }
-                });
-            });
-        }
+      const dispenserData = [
+        ["Dispenser Failure Line", "Total Hits"],
+        ...Object.entries(analysisData.dispenserErrors).map(([line, hits]) => [line, hits])
+      ];
 
-        // Date extraction helpers
-        function extractDateFromLine(line) {
-            // ISO YYYY-MM-DD
-            let match = line.match(/\b(20\d{2})[-/](0[1-9]|1[0-2])[-/](0[1-9]|[12]\d|3[01])\b/);
-            if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+      const wb = XLSX.utils.book_new();
+      
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+      const wsKeywords = XLSX.utils.aoa_to_sheet(keywordData);
+      const wsDispenser = XLSX.utils.aoa_to_sheet(dispenserData);
+      const wsDetailed = XLSX.utils.json_to_sheet(analysisData.detailedRecords);
 
-            // Standard DD/MM/YYYY or MM/DD/YYYY -> normalize to YYYY-MM-DD
-            match = line.match(/\b(0[1-9]|[12]\d|3[01])[-/](0[1-9]|1[0-2])[-/](20\d{2})\b/);
-            if (match) return `${match[3]}-${match[2]}-${match[1]}`;
+      XLSX.utils.book_append_sheet(wb, wsSummary, "Error Code Summary");
+      XLSX.utils.book_append_sheet(wb, wsKeywords, "Keyword Failures");
+      XLSX.utils.book_append_sheet(wb, wsDispenser, "Dispenser Failures");
+      XLSX.utils.book_append_sheet(wb, wsDetailed, "Raw Analyzed Logs");
 
-            return null;
-        }
+      XLSX.writeFile(wb, `ATM_Log_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+    }
 
-        function extractDateFromFilename(filename) {
-            const match = filename.match(/(20\d{2})[-_](0[1-9]|1[0-2])[-_](0[1-9]|[12]\d|3[01])/);
-            if (match) return `${match[1]}-${match[2]}-${match[3]}`;
-            return null;
-        }
+    function triggerDemoData() {
+      showProcessing(true, "Processing sample log archive...");
+      
+      setTimeout(() => {
+        const demoLogs1 = `
+2026-10-15 10:12:01 DISPENSER FAILURE (02:02NO NOTES DISPENSED)
+2026-10-15 11:20:00 Switch conn failure
+2026-10-15 12:05:10 DISPENSER FAILURE (11:11NO NOTES DISPENSED)
+2026-10-15 14:10:00 app level error
+        `;
+        const demoLogs2 = `
+2026-10-16 09:12:30 DISPENSER FAILURE (02:02NO NOTES DISPENSED)
+2026-10-16 10:22:11 suspect-1
+2026-10-16 11:05:44 ATR error
+2026-10-16 12:30:12 DISPENSER FAILURE (56:56NO NOTES DISPENSED)
+2026-10-16 15:10:00 pin encryption failure
+        `;
 
-        function formatDate(d) {
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
+        resetDataStore();
+        analysisData.processedFileCount = 2;
+        processLogContent(demoLogs1, "EJ_2026_10_15.log");
+        processLogContent(demoLogs2, "EJ_2026_10_16.log");
+        showProcessing(false);
+        renderDashboard();
+      }, 350);
+    }
 
-        function escapeRegExp(string) {
-            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        }
-
-        // Finalize state calculations and update UI
-        function finalizeAnalytics() {
-            // Build Unified List (Code Errors + Keywords + Dispenser Failure Lines) sorted by highest hits
-            let unified = [];
-
-            // Add Dispenser Error Codes
-            Object.keys(state.dispenserCodeHits).forEach(code => {
-                const hits = state.dispenserCodeHits[code];
-                if (hits > 0) {
-                    const info = MASTER_DISPENSER_CODES[code];
-                    unified.push({
-                        id: `CODE_${code}`,
-                        type: 'CODE',
-                        title: `Code ${code}: ${info.desc}`,
-                        subtitle: `${code}:NO NOTES DISPENSED`,
-                        hits: hits,
-                        tag: 'Dispenser Code',
-                        tagBg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-                        icon: 'fa-triangle-exclamation text-emerald-400',
-                        rootCause: info.cause,
-                        actions: info.actions
-                    });
-                }
-            });
-
-            // Add Keyword Failures
-            Object.keys(state.keywordHits).forEach(kw => {
-                const hits = state.keywordHits[kw];
-                if (hits > 0) {
-                    const info = KEYWORD_ACTION_MAP[kw] || { cause: 'Monitored system error keyword detected.', actions: ['Inspect software logs and trace transactions.'] };
-                    unified.push({
-                        id: `KW_${kw}`,
-                        type: 'KEYWORD',
-                        title: kw,
-                        subtitle: `Monitored Keyword Match`,
-                        hits: hits,
-                        tag: 'Monitored Keyword',
-                        tagBg: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-                        icon: 'fa-key text-rose-400',
-                        rootCause: info.cause,
-                        actions: info.actions
-                    });
-                }
-            });
-
-            // Add General Dispenser Lines if any
-            if (state.dispenserLineHits > 0) {
-                unified.push({
-                    id: 'GENERIC_DISPENSER_LINES',
-                    type: 'GENERAL',
-                    title: 'General Dispenser Failure Lines',
-                    subtitle: 'Lines with :NO NOTES DISPENSED without valid code 01-99',
-                    hits: state.dispenserLineHits,
-                    tag: 'General Dispenser Lines',
-                    tagBg: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-                    icon: 'fa-gears text-amber-400',
-                    rootCause: "Log entries indicating dispenser errors or 'NO NOTES DISPENSED' statements that lacked a valid 2-digit code prefix (01-99) or contained unrecognized code values.",
-                    actions: [
-                        "Review raw log context around these lines for unformatted dispenser output.",
-                        "Verify if dispenser controller firmware requires log syntax calibration.",
-                        "Inspect physical transport belts and note path sensors for transient jams."
-                    ]
-                });
-            }
-
-            // Sort highest to lowest
-            unified.sort((a, b) => b.hits - a.hits);
-            state.unifiedList = unified;
-
-            // Render components
-            renderStatsBanner();
-            renderUnifiedGrid();
-            renderDayByDayTable();
-            renderSecondaryLists();
-            updateChart();
-
-            document.getElementById('btnExportExcel').disabled = unified.length === 0;
-        }
-
-        // UI Renderers
-        function renderStatsBanner() {
-            const banner = document.getElementById('fileStatsBanner');
-            banner.classList.remove('hidden');
-
-            document.getElementById('statFileCount').innerText = `${state.fileCount} File(s)`;
-            document.getElementById('statLinesCount').innerText = state.totalLines.toLocaleString();
-            
-            const totalHits = state.unifiedList.reduce((acc, curr) => acc + curr.hits, 0);
-            document.getElementById('statTotalHits').innerText = totalHits.toLocaleString();
-
-            const dateCount = state.parsedDates.size;
-            document.getElementById('statDateRange').innerText = `${dateCount} Unique Day(s)`;
-        }
-
-        function renderUnifiedGrid() {
-            const grid = document.getElementById('unifiedGrid');
-            grid.innerHTML = '';
-
-            if (state.unifiedList.length === 0) {
-                grid.innerHTML = `
-                    <div class="col-span-full bg-slate-900 border border-dashed border-slate-800 rounded-2xl p-12 text-center text-slate-500">
-                        <i class="fa-solid fa-circle-check text-4xl mb-3 text-emerald-500/40 bounce-tap"></i>
-                        <p class="text-base font-semibold text-slate-300">No Dispenser Errors or Keywords Found</p>
-                        <p class="text-xs text-slate-500 mt-1">All parsed logs appear clean of targeted failure signatures.</p>
-                    </div>`;
-                return;
-            }
-
-            state.unifiedList.forEach(item => {
-                const card = document.createElement('div');
-                card.className = "bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 shadow-lg card-hover cursor-pointer flex flex-col justify-between space-y-4 group";
-                
-                card.innerHTML = `
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${item.tagBg}">
-                                ${item.tag}
-                            </span>
-                            <span class="text-xs font-mono font-bold text-slate-400 group-hover:text-white transition">
-                                <i class="fa-solid fa-fire text-rose-500 mr-1"></i> ${item.hits} Hits
-                            </span>
-                        </div>
-                        <h3 class="text-base font-bold text-white group-hover:text-indigo-300 transition flex items-center gap-2">
-                            <i class="fa-solid ${item.icon} bounce-tap"></i> ${item.title}
-                        </h3>
-                        <p class="text-xs font-mono text-slate-400 bg-slate-950/60 px-2.5 py-1 rounded-lg border border-slate-800/80 truncate">
-                            ${item.subtitle}
-                        </p>
-                    </div>
-
-                    <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400 group-hover:text-slate-200">
-                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-lightbulb text-amber-400"></i> View Action Plan</span>
-                        <i class="fa-solid fa-chevron-right text-slate-600 group-hover:translate-x-1 transition-transform"></i>
-                    </div>
-                `;
-
-                card.addEventListener('click', () => openActionModal(item));
-                grid.appendChild(card);
-            });
-        }
-
-        function renderDayByDayTable() {
-            const tbody = document.getElementById('dayByDayTableBody');
-            tbody.innerHTML = '';
-
-            const dates = Array.from(state.parsedDates).sort();
-
-            if (dates.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-slate-500 italic">No daily date logs available.</td></tr>`;
-                return;
-            }
-
-            dates.forEach(dateStr => {
-                const data = state.dailyBreakdown[dateStr] || { dispenser: 0, keyword: 0, lines: 0, total: 0 };
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-800/40 transition";
-
-                tr.innerHTML = `
-                    <td class="px-4 py-3 font-mono font-semibold text-white flex items-center gap-2">
-                        <i class="fa-regular fa-calendar text-indigo-400 bounce-tap"></i> ${dateStr}
-                    </td>
-                    <td class="px-4 py-3 font-mono ${data.dispenser > 0 ? 'text-emerald-400 font-bold' : 'text-slate-500'}">
-                        ${data.dispenser}
-                    </td>
-                    <td class="px-4 py-3 font-mono ${data.keyword > 0 ? 'text-rose-400 font-bold' : 'text-slate-500'}">
-                        ${data.keyword}
-                    </td>
-                    <td class="px-4 py-3 font-mono ${data.lines > 0 ? 'text-amber-400 font-bold' : 'text-slate-500'}">
-                        ${data.lines}
-                    </td>
-                    <td class="px-4 py-3 font-mono font-bold text-right text-white bg-slate-950/40">
-                        ${data.total}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function renderSecondaryLists() {
-            // Monitored Keywords Quick Ref
-            const kwList = document.getElementById('monitoredKeywordsList');
-            kwList.innerHTML = '';
-            let kwTotal = 0;
-
-            MONITORED_KEYWORDS.forEach(kw => {
-                const count = state.keywordHits[kw] || 0;
-                kwTotal += count;
-                const div = document.createElement('div');
-                div.className = `flex items-center justify-between p-2.5 rounded-xl border text-xs ${count > 0 ? 'bg-rose-950/20 border-rose-500/30 text-rose-200' : 'bg-slate-950/40 border-slate-800 text-slate-500'}`;
-                div.innerHTML = `
-                    <span class="font-mono flex items-center gap-2">
-                        <i class="fa-solid fa-hashtag ${count > 0 ? 'text-rose-400' : 'text-slate-600'}"></i> ${kw}
-                    </span>
-                    <span class="font-bold px-2 py-0.5 rounded ${count > 0 ? 'bg-rose-500/20 text-rose-300' : 'bg-slate-800 text-slate-500'}">${count}</span>
-                `;
-                kwList.appendChild(div);
-            });
-            document.getElementById('keywordTotalBadge').innerText = `${kwTotal} Hits`;
-
-            // General Dispenser Lines Quick Ref
-            const linesList = document.getElementById('dispenserLinesList');
-            linesList.innerHTML = '';
-            document.getElementById('dispenserLinesTotalBadge').innerText = `${state.dispenserLineHits} Lines`;
-
-            if (state.dispenserLinesList.length === 0) {
-                linesList.innerHTML = `<p class="text-xs text-slate-500 italic">No general dispenser failure lines recorded.</p>`;
-            } else {
-                state.dispenserLinesList.slice(0, 50).forEach(line => {
-                    const div = document.createElement('div');
-                    div.className = "p-2 rounded-lg bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-300 truncate";
-                    div.title = line;
-                    div.innerHTML = `<i class="fa-solid fa-terminal text-amber-400 mr-1.5"></i>${escapeHtml(line)}`;
-                    linesList.appendChild(div);
-                });
-            }
-        }
-
-        // Modal Handler
-        function openActionModal(item) {
-            document.getElementById('modalTitle').innerText = item.title;
-            document.getElementById('modalSubtitle').innerText = item.subtitle;
-            document.getElementById('modalRootCause').innerText = item.rootCause;
-            document.getElementById('modalHitCount').innerText = item.hits;
-
-            const actionsList = document.getElementById('modalActionPoints');
-            actionsList.innerHTML = '';
-            item.actions.forEach(action => {
-                const li = document.createElement('li');
-                li.innerText = action;
-                actionsList.appendChild(li);
-            });
-
-            document.getElementById('actionModal').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('actionModal').classList.add('hidden');
-        }
-
-        // Chart Initialization & Updates
-        function initChart() {
-            const ctx = document.getElementById('dailyTrendChart').getContext('2d');
-            dailyChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [
-                        {
-                            label: 'Dispenser Code Errors (XX:NO NOTES)',
-                            data: [],
-                            borderColor: '#22c55e',
-                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.3
-                        },
-                        {
-                            label: 'Monitored Keyword Hits',
-                            data: [],
-                            borderColor: '#f43f5e',
-                            backgroundColor: 'rgba(244, 63, 94, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.3
-                        },
-                        {
-                            label: 'General Dispenser Lines',
-                            data: [],
-                            borderColor: '#f59e0b',
-                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.3
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: { color: '#94a3b8', font: { family: 'sans-serif', size: 11 } }
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            backgroundColor: '#0f172a',
-                            borderColor: '#334155',
-                            borderWidth: 1
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: { color: 'rgba(51, 65, 85, 0.3)' },
-                            ticks: { color: '#94a3b8' }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(51, 65, 85, 0.3)' },
-                            ticks: { color: '#94a3b8', stepSize: 1 }
-                        }
-                    }
-                }
-            });
-        }
-
-        function updateChart() {
-            if (!dailyChartInstance) return;
-
-            const dates = Array.from(state.parsedDates).sort();
-            const codeData = [];
-            const kwData = [];
-            const linesData = [];
-
-            dates.forEach(d => {
-                const item = state.dailyBreakdown[d] || { dispenser: 0, keyword: 0, lines: 0 };
-                codeData.push(item.dispenser);
-                kwData.push(item.keyword);
-                linesData.push(item.lines);
-            });
-
-            dailyChartInstance.data.labels = dates.length > 0 ? dates : ['No Data'];
-            dailyChartInstance.data.datasets[0].data = codeData.length > 0 ? codeData : [0];
-            dailyChartInstance.data.datasets[1].data = kwData.length > 0 ? kwData : [0];
-            dailyChartInstance.data.datasets[2].data = linesData.length > 0 ? linesData : [0];
-            dailyChartInstance.update();
-        }
-
-        // Demo Data Loader
-        function loadDemoLogs() {
-            resetState();
-
-            const demoText = `
-[2026-10-15 08:12:01] INFO - ATM Startup Diagnostics Initialized
-[2026-10-15 08:14:22] ERROR - DISPENSER FAILURE (02:NO NOTES DISPENSED)
-[2026-10-15 09:30:11] WARN - Switch conn failure on gateway port 8080
-[2026-10-15 10:05:40] ERROR - 02:NO NOTES DISPENSED during withdrawal sequence
-[2026-10-15 11:12:09] ERROR - 76:NO NOTES DISPENSED - CAM FIND HOME TO
-[2026-10-15 12:45:00] ERROR - app level error in TxModule
-[2026-10-15 14:20:18] ERROR - 03:NO NOTES DISPENSED
-[2026-10-15 16:00:00] WARN - suspect-1 note detected during bill count
-
-[2026-10-16 09:10:15] ERROR - 02:NO NOTES DISPENSED
-[2026-10-16 11:22:33] ERROR - 11:NO NOTES DISPENSED
-[2026-10-16 13:05:12] ERROR - ATR error on card slot 1
-[2026-10-16 14:11:00] ERROR - 02:NO NOTES DISPENSED
-[2026-10-16 15:30:45] ERROR - DISPENSER FAILURE - NO NOTES DISPENSED
-[2026-10-16 17:45:10] ERROR - pin encryption failure in EPP hardware module
-
-[2026-10-17 08:00:20] ERROR - 76:NO NOTES DISPENSED
-[2026-10-17 10:15:00] ERROR - 76:NO NOTES DISPENSED
-[2026-10-17 12:30:11] ERROR - 02:NO NOTES DISPENSED
-[2026-10-17 14:55:00] ERROR - switch resp-timeout
-[2026-10-17 16:10:00] ERROR - command reject by dispenser CPU
-[2026-10-17 17:05:44] ERROR - 99:NO NOTES DISPENSED
-`;
-
-            processLogContent(demoText, "2026-10-17");
-            state.fileCount = 3; // Simulated multi-file batch
-            finalizeAnalytics();
-        }
-
-        // Excel Export via SheetJS
-        function exportToExcel() {
-            if (state.unifiedList.length === 0) return;
-
-            const wb = XLSX.utils.book_new();
-
-            // 1. Unified Grid Summary Sheet
-            const summaryData = state.unifiedList.map(item => ({
-                "Error ID / Category": item.title,
-                "Pattern / Match": item.subtitle,
-                "Category Type": item.tag,
-                "Total Hits": item.hits,
-                "Root Cause": item.rootCause
-            }));
-            const wsSummary = XLSX.utils.json_to_sheet(summaryData);
-            XLSX.utils.book_append_sheet(wb, wsSummary, "Unified Summary");
-
-            // 2. Day-by-Day Breakdown Sheet
-            const dayData = Array.from(state.parsedDates).sort().map(d => {
-                const b = state.dailyBreakdown[d] || { dispenser: 0, keyword: 0, lines: 0, total: 0 };
-                return {
-                    "Date": d,
-                    "Dispenser Code Errors (XX:NO NOTES)": b.dispenser,
-                    "Monitored Keyword Hits": b.keyword,
-                    "General Dispenser Lines": b.lines,
-                    "Total Hits": b.total
-                };
-            });
-            const wsDaily = XLSX.utils.json_to_sheet(dayData);
-            XLSX.utils.book_append_sheet(wb, wsDaily, "Day-by-Day Breakdown");
-
-            // 3. Monitored Keywords Sheet
-            const kwData = MONITORED_KEYWORDS.map(kw => ({
-                "Keyword": kw,
-                "Hits": state.keywordHits[kw] || 0
-            }));
-            const wsKW = XLSX.utils.json_to_sheet(kwData);
-            XLSX.utils.book_append_sheet(wb, wsKW, "Monitored Keywords");
-
-            // Generate filename and trigger save
-            const filename = `ATM_Log_Diagnostics_Report_${formatDate(new Date())}.xlsx`;
-            XLSX.writeFile(wb, filename);
-        }
-
-        function escapeHtml(str) {
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        }
-    </script>
+    function showProcessing(show, text = "") {
+      const el = document.getElementById("processingStatus");
+      if (show) {
+        document.getElementById("statusText").innerText = text;
+        el.classList.remove("hidden");
+      } else {
+        el.classList.add("hidden");
+      }
+    }
+  </script>
 </body>
 </html>
