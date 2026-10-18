@@ -64,7 +64,7 @@
         </div>
         <div>
           <h1 class="font-bold text-lg leading-tight tracking-tight text-white">ATM Log Diagnostics</h1>
-          <p class="text-xs text-slate-400">Dispenser & Keyword Failure Intelligence Engine</p>
+          <p class="text-xs text-slate-400">Dispenser Failure Code Analyzer & Intelligence Engine</p>
         </div>
       </div>
 
@@ -92,10 +92,10 @@
           <i data-lucide="upload-cloud" class="w-8 h-8"></i>
         </div>
         <h3 class="text-base font-semibold text-slate-800">Drop ATM Log Files or ZIP Archives here</h3>
-        <p class="text-xs text-slate-500 mt-1">Extracts exact DISPENSER FAILURE patterns, 01-99 codes, and Monitored Keywords</p>
+        <p class="text-xs text-slate-500 mt-1">Parses codes directly from lines like DISPENSER FAILURE (XX:...) & System Keywords</p>
         <div class="mt-4 flex items-center space-x-2 text-xs text-slate-400">
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-            01-99 Code Engine
+            01-99 Dispenser Code Engine
           </span>
           <span>•</span>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
@@ -121,7 +121,7 @@
     <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
         <div>
-          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Evaluated Events</p>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Evaluated Hits</p>
           <h4 id="statTotalEvents" class="text-2xl font-bold text-slate-800 mt-1">0</h4>
         </div>
         <div class="p-3 bg-blue-50 text-blue-600 rounded-xl bounce-tap">
@@ -131,7 +131,7 @@
 
       <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
         <div>
-          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Dispenser Error Codes</p>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Dispenser Failure Hits</p>
           <h4 id="statCodeErrors" class="text-2xl font-bold text-indigo-600 mt-1">0</h4>
         </div>
         <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl bounce-tap">
@@ -169,9 +169,9 @@
           <div>
             <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
               <i data-lucide="trending-up" class="w-5 h-5 text-indigo-600"></i>
-              Dispenser Error Code Counts (Sorted Highest to Lowest Hits)
+              Dispenser Failure Code Counts (Sorted Highest to Lowest Hits)
             </h2>
-            <p class="text-xs text-slate-500">Click any card box to inspect root causes and recommended technical action points.</p>
+            <p class="text-xs text-slate-500">Extracted directly from DISPENSER FAILURE (XX:...) patterns in the logs. Click any card for action points.</p>
           </div>
           <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full" id="errorTypeCount">0 Active Codes</span>
         </div>
@@ -188,31 +188,17 @@
       <!-- TWO COLUMN LAYOUT FOR CHART & KEYWORDS -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <!-- KEYWORD & DISPENSER CATEGORIES -->
+        <!-- KEYWORD FAILURES BOX -->
         <div class="lg:col-span-1 space-y-6">
-          
-          <!-- KEYWORD FAILURES BOX -->
           <div class="aesthetic-card rounded-2xl p-5">
             <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
               <i data-lucide="key" class="w-4 h-4 text-rose-500"></i>
               Monitored Keyword Failures
             </h3>
             <div id="keywordList" class="space-y-2">
-              <div class="text-xs text-slate-400 italic">No failures detected</div>
+              <div class="text-xs text-slate-400 italic">No keyword failures detected</div>
             </div>
           </div>
-
-          <!-- DISPENSER FAILURE CATEGORY BOX -->
-          <div class="aesthetic-card rounded-2xl p-5">
-            <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-              <i data-lucide="box" class="w-4 h-4 text-amber-500"></i>
-              Dispenser Failure Lines
-            </h3>
-            <div id="dispenserCategoryList" class="space-y-2">
-              <div class="text-xs text-slate-400 italic">No dispenser failure lines detected</div>
-            </div>
-          </div>
-
         </div>
 
         <!-- DAY BY DAY TREND CHART -->
@@ -222,7 +208,7 @@
               <i data-lucide="calendar" class="w-4 h-4 text-indigo-500"></i>
               Daily Failure Trend Analysis
             </h3>
-            <span class="text-xs text-slate-400">Hits per Log Calendar Date</span>
+            <span class="text-xs text-slate-400">Hits per Calendar Date</span>
           </div>
           <div class="relative w-full h-64 flex-1">
             <canvas id="dailyChart"></canvas>
@@ -244,15 +230,14 @@
             <thead class="bg-slate-100 text-slate-700 text-xs uppercase font-semibold">
               <tr>
                 <th class="px-4 py-3 rounded-l-lg">Extracted Date</th>
-                <th class="px-4 py-3">Dispenser Code Errors</th>
+                <th class="px-4 py-3">Dispenser Code Failures</th>
                 <th class="px-4 py-3">Keyword Failures</th>
-                <th class="px-4 py-3">Dispenser Category Lines</th>
                 <th class="px-4 py-3 text-right rounded-r-lg">Total Daily Hits</th>
               </tr>
             </thead>
             <tbody id="dailyTableBody" class="divide-y divide-slate-100">
               <tr>
-                <td colspan="5" class="text-center py-6 text-xs text-slate-400">Upload log files to view day-by-day distribution.</td>
+                <td colspan="4" class="text-center py-6 text-xs text-slate-400">Upload log files to view day-by-day distribution.</td>
               </tr>
             </tbody>
           </table>
@@ -315,7 +300,7 @@
 
   <!-- APPLICATION JAVASCRIPT LOGIC -->
   <script>
-    // MASTER DISPENSER ERROR CODE MAP (01-99)
+    // MASTER DISPENSER ERROR CODE MAPPING (01-99)
     const MASTER_ERROR_MAP = {
       1: { name: "DISPENSED SUCCESSFULLY", category: "Success", action: "Normal operation. No action required." },
       2: { name: "MOTOR TIMEOUT", category: "Hardware", action: "Check dispenser motor power supply and cable connectors. Inspect drive gears and belts for jams." },
@@ -429,8 +414,8 @@
       "command reject"
     ];
 
-    // Regex to match DISPENSER FAILURE (...) pattern exactly
-    const DISPENSER_FAILURE_REGEX = /DISPENSER\s+FAILURE\s*\(([^)]+)\)/gi;
+    // Regex to capture the exact code digits immediately inside DISPENSER FAILURE (XX:...)
+    const DISPENSER_FAILURE_REGEX = /DISPENSER\s+FAILURE\s*\(\s*(\d{1,2})/gi;
 
     // Multi-format Date Extractor
     const DATE_PATTERNS = [
@@ -444,7 +429,6 @@
       processedFileCount: 0,
       codeErrors: {},     
       keywordErrors: {},  
-      dispenserErrors: {},
       dailyTrend: {},     
       detailedRecords: [] 
     };
@@ -511,7 +495,6 @@
         processedFileCount: 0,
         codeErrors: {},
         keywordErrors: {},
-        dispenserErrors: {},
         dailyTrend: {},
         detailedRecords: []
       };
@@ -529,26 +512,21 @@
 
         let lineMatched = false;
 
-        // DISPENSER FAILURE PARSING
+        // PARSE EXACT CODE INSIDE DISPENSER FAILURE (XX:...)
         let dispMatch;
         DISPENSER_FAILURE_REGEX.lastIndex = 0;
         while ((dispMatch = DISPENSER_FAILURE_REGEX.exec(line)) !== null) {
-          const rawBracketContent = dispMatch[1].trim(); 
-          analysisData.dispenserErrors[rawBracketContent] = (analysisData.dispenserErrors[rawBracketContent] || 0) + 1;
-          lineMatched = true;
-
-          const codeMatch = rawBracketContent.match(/^(0[1-9]|[1-9][0-9])\b/);
-          if (codeMatch) {
-            const codeNum = parseInt(codeMatch[1], 10);
+          const codeNum = parseInt(dispMatch[1], 10);
+          if (codeNum >= 1 && codeNum <= 99) {
             analysisData.codeErrors[codeNum] = (analysisData.codeErrors[codeNum] || 0) + 1;
-            const codeInfo = MASTER_ERROR_MAP[codeNum] || { name: rawBracketContent };
+            lineMatched = true;
+
+            const codeInfo = MASTER_ERROR_MAP[codeNum] || { name: `UNKNOWN FAILURE (${codeNum})` };
             recordEvent(dateStr, 'code', codeNum, codeInfo.name, line, fileName);
-          } else {
-            recordEvent(dateStr, 'dispenser', rawBracketContent, rawBracketContent, line, fileName);
           }
         }
 
-        // MONITORED KEYWORDS
+        // PARSE MONITORED KEYWORDS
         KEYWORD_TARGETS.forEach(keyword => {
           if (line.toLowerCase().includes(keyword.toLowerCase())) {
             analysisData.keywordErrors[keyword] = (analysisData.keywordErrors[keyword] || 0) + 1;
@@ -576,7 +554,7 @@
 
     function recordEvent(dateStr, type, key, title, line, fileName) {
       if (!analysisData.dailyTrend[dateStr]) {
-        analysisData.dailyTrend[dateStr] = { total: 0, code: 0, keyword: 0, dispenser: 0 };
+        analysisData.dailyTrend[dateStr] = { total: 0, code: 0, keyword: 0 };
       }
       analysisData.dailyTrend[dateStr].total++;
       analysisData.dailyTrend[dateStr][type]++;
@@ -597,11 +575,9 @@
 
       const totalCodeHits = Object.values(analysisData.codeErrors).reduce((a, b) => a + b, 0);
       const totalKeywordHits = Object.values(analysisData.keywordErrors).reduce((a, b) => a + b, 0);
-      const totalDispenserHits = Object.values(analysisData.dispenserErrors).reduce((a, b) => a + b, 0);
 
       document.getElementById("statCodeErrors").innerText = totalCodeHits.toLocaleString();
       document.getElementById("statKeywordErrors").innerText = totalKeywordHits.toLocaleString();
-      document.getElementById("statDispenserErrors").innerText = totalDispenserHits.toLocaleString();
 
       if (analysisData.totalEvents > 0) {
         document.getElementById("exportExcelBtn").classList.remove("hidden");
@@ -609,7 +585,6 @@
 
       renderErrorGrid();
       renderKeywordList();
-      renderDispenserList();
       renderDailyTableAndChart();
 
       lucide.createIcons();
@@ -626,7 +601,7 @@
             codeNum: num,
             formattedCode: num < 10 ? `0${num}` : `${num}`,
             count,
-            info: MASTER_ERROR_MAP[num] || { name: "DISPENSER FAILURE", action: "Inspect hardware module." }
+            info: MASTER_ERROR_MAP[num] || { name: `UNKNOWN ERROR (${num})`, action: "Inspect hardware module." }
           };
         })
         .sort((a, b) => b.count - a.count);
@@ -637,7 +612,7 @@
         grid.innerHTML = `
           <div class="col-span-full text-center py-12 text-slate-400">
             <i data-lucide="check-circle" class="w-10 h-10 mx-auto mb-2 text-emerald-400"></i>
-            <p class="text-sm font-medium">No valid numeric dispenser failure codes found in analyzed log files.</p>
+            <p class="text-sm font-medium">No DISPENSER FAILURE codes detected in analyzed log files.</p>
           </div>
         `;
         return;
@@ -699,31 +674,6 @@
       });
     }
 
-    function renderDispenserList() {
-      const container = document.getElementById("dispenserCategoryList");
-      container.innerHTML = "";
-
-      const sortedDispenser = Object.entries(analysisData.dispenserErrors)
-        .sort((a, b) => b[1] - a[1]);
-
-      if (sortedDispenser.length === 0) {
-        container.innerHTML = `<div class="text-xs text-slate-400 italic">No dispenser failure lines detected</div>`;
-        return;
-      }
-
-      sortedDispenser.forEach(([lineText, hits]) => {
-        const item = document.createElement("div");
-        item.className = "flex items-center justify-between text-xs bg-amber-50/50 hover:bg-amber-50 border border-amber-100 rounded-lg p-2.5 transition-colors";
-        item.innerHTML = `
-          <span class="font-medium text-amber-900 truncate max-w-[200px]" title="${lineText}">
-            ${lineText}
-          </span>
-          <span class="font-bold text-amber-700 bg-white px-2 py-0.5 rounded shadow-xs border border-amber-100">${hits} hits</span>
-        `;
-        container.appendChild(item);
-      });
-    }
-
     function renderDailyTableAndChart() {
       const tbody = document.getElementById("dailyTableBody");
       tbody.innerHTML = "";
@@ -731,7 +681,7 @@
       const sortedDates = Object.keys(analysisData.dailyTrend).sort();
 
       if (sortedDates.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-xs text-slate-400">No dated records available.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-xs text-slate-400">No dated records available.</td></tr>`;
         updateChart([], []);
         return;
       }
@@ -750,7 +700,6 @@
           <td class="px-4 py-3 font-semibold text-slate-800 text-xs">${date}</td>
           <td class="px-4 py-3 text-indigo-600 font-medium">${day.code || 0}</td>
           <td class="px-4 py-3 text-rose-600 font-medium">${day.keyword || 0}</td>
-          <td class="px-4 py-3 text-amber-600 font-medium">${day.dispenser || 0}</td>
           <td class="px-4 py-3 text-right font-bold text-slate-900">${day.total}</td>
         `;
         tbody.appendChild(tr);
@@ -847,7 +796,7 @@
       const summaryData = [
         ["ATM Log Diagnostic Executive Report"],
         ["Generated Date", new Date().toLocaleString()],
-        ["Total Analyzed Events", analysisData.totalEvents],
+        ["Total Analyzed Hits", analysisData.totalEvents],
         ["Total Log Files Processed", analysisData.processedFileCount],
         [],
         ["Error Code", "Description", "Hit Count", "Recommended Action"],
@@ -856,7 +805,7 @@
           const formatted = num < 10 ? `0${num}` : `${num}`;
           return [
             `CODE ${formatted}`,
-            MASTER_ERROR_MAP[num]?.name || "DISPENSER FAILURE",
+            MASTER_ERROR_MAP[num]?.name || `UNKNOWN FAILURE (${num})`,
             hits,
             MASTER_ERROR_MAP[num]?.action || ""
           ];
@@ -868,21 +817,14 @@
         ...Object.entries(analysisData.keywordErrors).map(([kw, hits]) => [kw, hits])
       ];
 
-      const dispenserData = [
-        ["Dispenser Failure Line", "Total Hits"],
-        ...Object.entries(analysisData.dispenserErrors).map(([line, hits]) => [line, hits])
-      ];
-
       const wb = XLSX.utils.book_new();
       
       const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
       const wsKeywords = XLSX.utils.aoa_to_sheet(keywordData);
-      const wsDispenser = XLSX.utils.aoa_to_sheet(dispenserData);
       const wsDetailed = XLSX.utils.json_to_sheet(analysisData.detailedRecords);
 
       XLSX.utils.book_append_sheet(wb, wsSummary, "Error Code Summary");
       XLSX.utils.book_append_sheet(wb, wsKeywords, "Keyword Failures");
-      XLSX.utils.book_append_sheet(wb, wsDispenser, "Dispenser Failures");
       XLSX.utils.book_append_sheet(wb, wsDetailed, "Raw Analyzed Logs");
 
       XLSX.writeFile(wb, `ATM_Log_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
@@ -893,23 +835,24 @@
       
       setTimeout(() => {
         const demoLogs1 = `
-2026-10-15 10:12:01 DISPENSER FAILURE (02:02NO NOTES DISPENSED)
-2026-10-15 11:20:00 Switch conn failure
-2026-10-15 12:05:10 DISPENSER FAILURE (11:11NO NOTES DISPENSED)
-2026-10-15 14:10:00 app level error
+Line 27552 DISPENSER FAILURE (02:02NO NOTES DISPENSED)
+Line 27553 Switch conn failure
+Line 27554 DISPENSER FAILURE (11:11NO NOTES DISPENSED)
+Line 27555 app level error
         `;
         const demoLogs2 = `
-2026-10-16 09:12:30 DISPENSER FAILURE (02:02NO NOTES DISPENSED)
-2026-10-16 10:22:11 suspect-1
-2026-10-16 11:05:44 ATR error
-2026-10-16 12:30:12 DISPENSER FAILURE (56:56NO NOTES DISPENSED)
-2026-10-16 15:10:00 pin encryption failure
+Line 1234 DISPENSER FAILURE (02:02NO NOTES DISPENSED)
+Line 1235 suspect-1
+Line 1236 ATR error
+Line 1237 DISPENSER FAILURE (56:56NO NOTES DISPENSED)
+Line 1238 DISPENSER FAILURE (69:FID A CARD REMOVE TIMEOUT)
+Line 1239 pin encryption failure
         `;
 
         resetDataStore();
         analysisData.processedFileCount = 2;
-        processLogContent(demoLogs1, "EJ_2026_10_15.log");
-        processLogContent(demoLogs2, "EJ_2026_10_16.log");
+        processLogContent(demoLogs1, "EJ_2026_09_17.log");
+        processLogContent(demoLogs2, "EJ_2026_09_18.log");
         showProcessing(false);
         renderDashboard();
       }, 350);
