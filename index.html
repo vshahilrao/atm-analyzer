@@ -66,7 +66,7 @@
         <div>
           <h1 class="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
             ATM Log Diagnostics
-            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">v2.8 Smart-Match</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">v2.10 Scrollable Modal</span>
           </h1>
           <p class="text-xs text-slate-500">Dispenser Error Code & Monitored Keyword Intelligence</p>
         </div>
@@ -95,19 +95,19 @@
         <div class="w-14 h-14 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-2xl flex items-center justify-center mb-3 bounce-tap shadow-sm">
           <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
         </div>
-        <h3 class="text-base font-semibold text-slate-900">Drop ATM Log Files or ZIP Archives here</h3>
-        <p class="text-xs text-slate-500 mt-1">Smart-matches SWITCH CONN. FAILURE, E*2, DISPENSER FAILURE codes, and Monitored Keywords</p>
+        <h3 class="text-base font-semibold text-slate-900">Drop ATM Log Files, ejBackup ZIP, or Syslog ZIP Archives here</h3>
+        <p class="text-xs text-slate-500 mt-1">Extracts ejBackup archives, syslog bundles, DISPENSER FAILURE codes, and Monitored Keywords</p>
         <div class="mt-4 flex flex-wrap justify-center items-center gap-2 text-xs text-slate-600">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+            ejBackup & Syslog ZIP Support
+          </span>
+          <span>•</span>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
             01-99 Dispenser Code Engine
           </span>
           <span>•</span>
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-            Flexible Keyword Matching
-          </span>
-          <span>•</span>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200" id="fileCountBadge">
-            ZIP Bundle Counter
+            Bundle Counter
           </span>
         </div>
       </div>
@@ -116,7 +116,7 @@
       <div id="processingStatus" class="hidden mt-4 pt-4 border-t border-slate-200 text-center">
         <div class="flex items-center justify-center space-x-2 text-sm text-indigo-600 font-medium">
           <i class="fa-solid fa-spinner fa-spin"></i>
-          <span id="statusText">Analyzing Log Content...</span>
+          <span id="statusText">Analyzing Archive & Log Content...</span>
         </div>
       </div>
     </section>
@@ -291,9 +291,12 @@
             <i class="fa-solid fa-circle-check text-emerald-600"></i>
             Recommended Technical Action Points
           </h4>
-          <ul id="modalActionsList" class="space-y-2 text-xs text-slate-600">
-            <!-- Dynamic Actions -->
-          </ul>
+          <!-- Scrollable Action Points Container added here -->
+          <div class="max-h-60 overflow-y-auto pr-1">
+            <ul id="modalActionsList" class="space-y-2 text-xs text-slate-600">
+              <!-- Dynamic Actions -->
+            </ul>
+          </div>
         </div>
       </div>
 
@@ -308,7 +311,7 @@
   <!-- FOOTER -->
   <footer class="bg-white border-t border-slate-200 py-4 mt-8 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
-      ATM Log Intelligence & Diagnostics Engine • v2.8 Professional Edition (Light Theme)
+      ATM Log Intelligence & Diagnostics Engine • v2.10 Professional Edition (Light Theme)
     </div>
   </footer>
 
@@ -417,7 +420,7 @@
       99: { name: "UNKNOWN ERROR", action: "Consult manufacturer hardware logs." }
     };
 
-    // MONITORED KEYWORDS & ACTION MAP (INCLUDES FLEXIBLE MATCHING FOR SWITCH CONN FAILURE & E*2)
+    // MONITORED KEYWORDS & ACTION MAP
     const KEYWORD_CONFIGS = [
       { 
         keys: ["switch conn failure", "switch conn. failure", "switch connection failure"], 
@@ -461,7 +464,7 @@
         name: "Switch Response Timeout", 
         action: "Check host network latency. Inspect host gateway parameters and router firewall socket connections." 
       },
-       { 
+      { 
         keys: ["too many present error", "too many present error"], 
         displayKey: "TOO MANY PRESENT ERROR",
         name: "too many present error", 
@@ -510,7 +513,7 @@
       const files = event.target.files;
       if (!files || files.length === 0) return;
 
-      showProcessing(true, "Reading uploaded log file(s)...");
+      showProcessing(true, "Reading uploaded log file(s) and archives...");
       resetDataStore();
 
       for (let i = 0; i < files.length; i++) {
@@ -541,13 +544,22 @@
       try {
         const zip = new JSZip();
         const unzipped = await zip.loadAsync(zipFile);
-        const fileKeys = Object.keys(unzipped.files).filter(fn => !unzipped.files[fn].dir && (fn.endsWith('.log') || fn.endsWith('.txt')));
         
-        analysisData.processedFileCount += fileKeys.length;
+        const fileKeys = Object.keys(unzipped.files).filter(fn => {
+          const lower = fn.toLowerCase();
+          return !unzipped.files[fn].dir && (lower.endsWith('.log') || lower.endsWith('.txt') || lower.endsWith('.dat') || lower.endsWith('.ej') || lower.endsWith('.zip'));
+        });
 
         for (const filename of fileKeys) {
-          const content = await unzipped.files[filename].async("text");
-          processLogContent(content, filename);
+          const lower = filename.toLowerCase();
+          if (lower.endsWith('.zip')) {
+            const nestedZipBlob = await unzipped.files[filename].async("blob");
+            await processZipFile(new File([nestedZipBlob], filename));
+          } else {
+            analysisData.processedFileCount++;
+            const content = await unzipped.files[filename].async("text");
+            processLogContent(content, filename);
+          }
         }
       } catch (err) {
         console.error("ZIP processing error:", err);
