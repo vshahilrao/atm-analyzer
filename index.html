@@ -54,17 +54,6 @@
       border: 1px solid rgba(51, 65, 85, 0.6);
       box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
     }
-
-    /* Navigation Tab Styles */
-    .nav-tab {
-      transition: all 0.2s ease;
-      border-bottom: 2px solid transparent;
-    }
-    .nav-tab.active {
-      color: #818cf8;
-      border-bottom-color: #6366f1;
-      background: rgba(99, 102, 241, 0.1);
-    }
   </style>
 </head>
 <body class="h-full font-sans antialiased bg-slate-950 text-slate-100 flex flex-col min-h-screen">
@@ -95,26 +84,6 @@
           <span>Load Sample Logs</span>
         </button>
       </div>
-    </div>
-
-    <!-- MAIN NAVIGATION TABS -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 border-t border-slate-800/60 overflow-x-auto text-xs font-medium text-slate-400">
-      <button onclick="switchTab('overview')" id="tab-overview" class="nav-tab active px-4 py-3 flex items-center gap-2 whitespace-nowrap">
-        <i class="fa-solid fa-chart-pie"></i>
-        <span>Dashboard Overview</span>
-      </button>
-      <button onclick="switchTab('dispenser')" id="tab-dispenser" class="nav-tab px-4 py-3 flex items-center gap-2 whitespace-nowrap">
-        <i class="fa-solid fa-microchip"></i>
-        <span>Dispenser Failures</span>
-      </button>
-      <button onclick="switchTab('keywords')" id="tab-keywords" class="nav-tab px-4 py-3 flex items-center gap-2 whitespace-nowrap">
-        <i class="fa-solid fa-key"></i>
-        <span>Keyword Failures</span>
-      </button>
-      <button onclick="switchTab('trend')" id="tab-trend" class="nav-tab px-4 py-3 flex items-center gap-2 whitespace-nowrap">
-        <i class="fa-solid fa-calendar-days"></i>
-        <span>Daily Trends & Breakdown</span>
-      </button>
     </div>
   </header>
 
@@ -197,86 +166,87 @@
       </div>
     </section>
 
-    <!-- VIEW TAB 1: OVERVIEW & DISPENSER FAILURES -->
-    <section id="view-overview" class="space-y-6">
-      <div class="aesthetic-card rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h2 class="text-base font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-chart-line text-indigo-400"></i>
-              Dispenser Failure Code Counts (Sorted Highest to Lowest Hits)
-            </h2>
-            <p class="text-xs text-slate-400">Extracted from DISPENSER FAILURE (XX:...) log patterns. Click any card for action steps.</p>
-          </div>
-          <span class="text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 px-3 py-1 rounded-full" id="errorTypeCount">0 Active Codes</span>
-        </div>
-
-        <div id="errorGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          <div class="col-span-full text-center py-12 text-slate-500">
-            <i class="fa-solid fa-file-circle-question text-4xl mb-2 opacity-40"></i>
-            <p class="text-sm">No log data analyzed yet. Upload log files to display error counts.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- VIEW TAB 2: MONITORED KEYWORD FAILURES -->
-    <section id="view-keywords" class="space-y-6 hidden">
-      <div class="aesthetic-card rounded-2xl p-6">
-        <div class="mb-4">
-          <h3 class="text-base font-bold text-white flex items-center gap-2">
-            <i class="fa-solid fa-key text-rose-400"></i>
-            Monitored Keyword Failures
-          </h3>
-          <p class="text-xs text-slate-400 mt-0.5">Click any keyword card to view specific technical diagnostic steps.</p>
-        </div>
-        <div id="keywordList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div class="col-span-full text-xs text-slate-500 italic py-6 text-center">No keyword failures detected</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- VIEW TAB 3: DAILY TREND & BREAKDOWN TABLE -->
-    <section id="view-trend" class="space-y-6 hidden">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-3 aesthetic-card rounded-2xl p-5 flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-calendar-days text-indigo-400"></i>
-              Daily Failure Trend Analysis
-            </h3>
-            <span class="text-xs text-slate-400">Hits per Calendar Date</span>
-          </div>
-          <div class="relative w-full h-64 flex-1">
-            <canvas id="dailyChart"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <div class="aesthetic-card rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-4">
+    <!-- DISPENSER CODE COUNTS (SORTED HIGH TO LOW) -->
+    <section class="aesthetic-card rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
           <h2 class="text-base font-bold text-white flex items-center gap-2">
-            <i class="fa-solid fa-table-list text-indigo-400"></i>
-            Day-by-Day Error & Hit Breakdown Table
+            <i class="fa-solid fa-chart-line text-indigo-400"></i>
+            Dispenser Failure Code Counts (Sorted Highest to Lowest Hits)
           </h2>
+          <p class="text-xs text-slate-400">Extracted from DISPENSER FAILURE (XX:...) log patterns. Click any card for action steps.</p>
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-slate-300">
-            <thead class="bg-slate-900/90 text-slate-400 text-xs uppercase font-semibold border-b border-slate-800">
-              <tr>
-                <th class="px-4 py-3 rounded-l-lg">Extracted Date</th>
-                <th class="px-4 py-3">Dispenser Code Failures</th>
-                <th class="px-4 py-3">Keyword Failures</th>
-                <th class="px-4 py-3 text-right rounded-r-lg">Total Daily Hits</th>
-              </tr>
-            </thead>
-            <tbody id="dailyTableBody" class="divide-y divide-slate-800/60">
-              <tr>
-                <td colspan="4" class="text-center py-6 text-xs text-slate-500">Upload log files to view day-by-day distribution.</td>
-              </tr>
-            </tbody>
-          </table>
+        <span class="text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 px-3 py-1 rounded-full" id="errorTypeCount">0 Active Codes</span>
+      </div>
+
+      <!-- ERROR GRID -->
+      <div id="errorGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div class="col-span-full text-center py-12 text-slate-500">
+          <i class="fa-solid fa-file-circle-question text-4xl mb-2 opacity-40"></i>
+          <p class="text-sm">No log data analyzed yet. Upload log files to display error counts.</p>
         </div>
+      </div>
+    </section>
+
+    <!-- MONITORED KEYWORDS & TREND CHART -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- KEYWORD FAILURES (CLICKABLE CARDS) -->
+      <div class="lg:col-span-1 space-y-6">
+        <div class="aesthetic-card rounded-2xl p-5">
+          <div class="mb-3">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-key text-rose-400"></i>
+              Monitored Keyword Failures
+            </h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">Click any keyword box to view diagnostic action points.</p>
+          </div>
+          <div id="keywordList" class="space-y-2.5">
+            <div class="text-xs text-slate-500 italic">No keyword failures detected</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DAILY TREND CHART -->
+      <div class="lg:col-span-2 aesthetic-card rounded-2xl p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-calendar-days text-indigo-400"></i>
+            Daily Failure Trend Analysis
+          </h3>
+          <span class="text-xs text-slate-400">Hits per Calendar Date</span>
+        </div>
+        <div class="relative w-full h-64 flex-1">
+          <canvas id="dailyChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- DAILY BREAKDOWN TABLE -->
+    <section class="aesthetic-card rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-table-list text-indigo-400"></i>
+          Day-by-Day Error & Hit Breakdown Table
+        </h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-300">
+          <thead class="bg-slate-900/90 text-slate-400 text-xs uppercase font-semibold border-b border-slate-800">
+            <tr>
+              <th class="px-4 py-3 rounded-l-lg">Extracted Date</th>
+              <th class="px-4 py-3">Dispenser Code Failures</th>
+              <th class="px-4 py-3">Keyword Failures</th>
+              <th class="px-4 py-3 text-right rounded-r-lg">Total Daily Hits</th>
+            </tr>
+          </thead>
+          <tbody id="dailyTableBody" class="divide-y divide-slate-800/60">
+            <tr>
+              <td colspan="4" class="text-center py-6 text-xs text-slate-500">Upload log files to view day-by-day distribution.</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
@@ -476,26 +446,6 @@
       initChart();
       triggerDemoData(); // Load demo preview by default
     });
-
-    // NAVIGATION TAB SWITCHING
-    function switchTab(tabKey) {
-      const tabs = ['overview', 'dispenser', 'keywords', 'trend'];
-      tabs.forEach(t => {
-        const btn = document.getElementById(`tab-${t}`);
-        const view = document.getElementById(`view-${t === 'dispenser' ? 'overview' : t}`);
-        
-        if (t === tabKey || (tabKey === 'overview' && t === 'overview') || (tabKey === 'dispenser' && t === 'dispenser')) {
-          if (btn) btn.classList.add('active');
-        } else {
-          if (btn) btn.classList.remove('active');
-        }
-      });
-
-      // Show/Hide sections
-      document.getElementById('view-overview').classList.toggle('hidden', !(tabKey === 'overview' || tabKey === 'dispenser'));
-      document.getElementById('view-keywords').classList.toggle('hidden', tabKey !== 'keywords');
-      document.getElementById('view-trend').classList.toggle('hidden', tabKey !== 'trend');
-    }
 
     async function handleFileUpload(event) {
       const files = event.target.files;
@@ -711,7 +661,7 @@
         .sort((a, b) => b[1] - a[1]);
 
       if (sortedKeywords.length === 0) {
-        container.innerHTML = `<div class="col-span-full text-xs text-slate-500 italic py-6 text-center">No keyword failures detected</div>`;
+        container.innerHTML = `<div class="text-xs text-slate-500 italic">No keyword failures detected</div>`;
         return;
       }
 
