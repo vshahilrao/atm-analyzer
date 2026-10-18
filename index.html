@@ -66,7 +66,7 @@
         <div>
           <h1 class="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
             ATM Log Diagnostics
-            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">v2.7 Light Theme</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">v2.8 Smart-Match</span>
           </h1>
           <p class="text-xs text-slate-500">Dispenser Error Code & Monitored Keyword Intelligence</p>
         </div>
@@ -96,14 +96,14 @@
           <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
         </div>
         <h3 class="text-base font-semibold text-slate-900">Drop ATM Log Files or ZIP Archives here</h3>
-        <p class="text-xs text-slate-500 mt-1">Extracts exact DISPENSER FAILURE (XX:...) patterns, 01-99 codes, and Monitored System Keywords (including E*2)</p>
+        <p class="text-xs text-slate-500 mt-1">Smart-matches SWITCH CONN. FAILURE, E*2, DISPENSER FAILURE codes, and Monitored Keywords</p>
         <div class="mt-4 flex flex-wrap justify-center items-center gap-2 text-xs text-slate-600">
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
             01-99 Dispenser Code Engine
           </span>
           <span>•</span>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-            Interactive Keyword Actions
+            Flexible Keyword Matching
           </span>
           <span>•</span>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200" id="fileCountBadge">
@@ -308,7 +308,7 @@
   <!-- FOOTER -->
   <footer class="bg-white border-t border-slate-200 py-4 mt-8 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
-      ATM Log Intelligence & Diagnostics Engine • v2.7 Professional Edition (Light Theme)
+      ATM Log Intelligence & Diagnostics Engine • v2.8 Professional Edition (Light Theme)
     </div>
   </footer>
 
@@ -417,20 +417,63 @@
       99: { name: "UNKNOWN ERROR", action: "Consult manufacturer hardware logs." }
     };
 
-    // MONITORED KEYWORD DEFINITIONS & ACTIONS (INCLUDES E*2)
-    const KEYWORD_ACTION_MAP = {
-      "Switch conn failure": { name: "Switch Connection Failure", action: "Check network switch Ethernet patch cable. Verify ATM router signal, WAN connectivity, and switch IP routing." },
-      "app level error": { name: "Application Level Error", action: "Inspect terminal application software logs. Restart ATM runtime middleware and re-verify session settings." },
-      "ATR error": { name: "Smart Card Reader ATR Error", action: "Clean smart card reader contacts using cleaning card. Inspect card reader bezel motor and reader harness." },
-      "suspect-1": { name: "Suspect Banknote Detected (Path 1)", action: "Inspect suspect banknote divert bin. Recalibrate optical note validator/thickness sensors." },
-      "suspect-2": { name: "Suspect Banknote Detected (Path 2)", action: "Inspect suspect banknote transport chute. Check optical sensor array for dust or alignment drift." },
-      "pin encryption failure": { name: "EPP PIN Encryption Failure", action: "Verify Encrypting PIN Pad (EPP) master key status. Check serial/USB connection to EPP board." },
-      "switch resp-timeout": { name: "Switch Response Timeout", action: "Check host network latency. Inspect host gateway parameters and router firewall socket connections." },
-      "command reject": { name: "Command Rejected by Peripheral", action: "Verify device driver protocol compatibility. Re-send command sequence or perform module reset." },
-      "E*2": { name: "E*2 Communication Fault", action: "Inspect hardware module interface and E*2 line communication protocol for corrupted packet transmissions or hardware disconnects." }
-    };
-
-    const KEYWORD_TARGETS = Object.keys(KEYWORD_ACTION_MAP);
+    // MONITORED KEYWORDS & ACTION MAP (INCLUDES FLEXIBLE MATCHING FOR SWITCH CONN FAILURE & E*2)
+    const KEYWORD_CONFIGS = [
+      { 
+        keys: ["switch conn failure", "switch conn. failure", "switch connection failure"], 
+        displayKey: "SWITCH CONN. FAILURE",
+        name: "Switch Connection Failure", 
+        action: "Check network switch Ethernet patch cable. Verify ATM router signal, WAN connectivity, and switch IP routing." 
+      },
+      { 
+        keys: ["app level error"], 
+        displayKey: "app level error",
+        name: "Application Level Error", 
+        action: "Inspect terminal application software logs. Restart ATM runtime middleware and re-verify session settings." 
+      },
+      { 
+        keys: ["atr error"], 
+        displayKey: "ATR error",
+        name: "Smart Card Reader ATR Error", 
+        action: "Clean smart card reader contacts using cleaning card. Inspect card reader bezel motor and reader harness." 
+      },
+      { 
+        keys: ["suspect-1"], 
+        displayKey: "suspect-1",
+        name: "Suspect Banknote Detected (Path 1)", 
+        action: "Inspect suspect banknote divert bin. Recalibrate optical note validator/thickness sensors." 
+      },
+      { 
+        keys: ["suspect-2"], 
+        displayKey: "suspect-2",
+        name: "Suspect Banknote Detected (Path 2)", 
+        action: "Inspect suspect banknote transport chute. Check optical sensor array for dust or alignment drift." 
+      },
+      { 
+        keys: ["pin encryption failure"], 
+        displayKey: "pin encryption failure",
+        name: "EPP PIN Encryption Failure", 
+        action: "Verify Encrypting PIN Pad (EPP) master key status. Check serial/USB connection to EPP board." 
+      },
+      { 
+        keys: ["switch resp-timeout", "switch response timeout"], 
+        displayKey: "switch resp-timeout",
+        name: "Switch Response Timeout", 
+        action: "Check host network latency. Inspect host gateway parameters and router firewall socket connections." 
+      },
+      { 
+        keys: ["command reject"], 
+        displayKey: "command reject",
+        name: "Command Rejected by Peripheral", 
+        action: "Verify device driver protocol compatibility. Re-send command sequence or perform module reset." 
+      },
+      { 
+        keys: ["e*2"], 
+        displayKey: "E*2",
+        name: "E*2 Communication Fault", 
+        action: "Inspect hardware module interface and E*2 line communication protocol for corrupted packet transmissions or hardware disconnects." 
+      }
+    ];
 
     // Regex to capture the exact code digits immediately inside DISPENSER FAILURE (XX:...)
     const DISPENSER_FAILURE_REGEX = /DISPENSER\s+FAILURE\s*\(\s*(\d{1,2})/gi;
@@ -526,6 +569,7 @@
 
         const lineDateMatch = extractDateString(line);
         const dateStr = lineDateMatch || fileDateMatch || "Undated Logs";
+        const lowerLine = line.toLowerCase();
 
         let lineMatched = false;
 
@@ -543,12 +587,13 @@
           }
         }
 
-        // PARSE MONITORED KEYWORDS (INCLUDING E*2)
-        KEYWORD_TARGETS.forEach(keyword => {
-          if (line.toLowerCase().includes(keyword.toLowerCase())) {
-            analysisData.keywordErrors[keyword] = (analysisData.keywordErrors[keyword] || 0) + 1;
+        // PARSE MONITORED KEYWORDS WITH SMART MATCHING
+        KEYWORD_CONFIGS.forEach(config => {
+          const matchedKey = config.keys.find(k => lowerLine.includes(k.toLowerCase()));
+          if (matchedKey) {
+            analysisData.keywordErrors[config.displayKey] = (analysisData.keywordErrors[config.displayKey] || 0) + 1;
             lineMatched = true;
-            recordEvent(dateStr, 'keyword', keyword, KEYWORD_ACTION_MAP[keyword]?.name || keyword, line, fileName);
+            recordEvent(dateStr, 'keyword', config.displayKey, config.name, line, fileName);
           }
         });
 
@@ -677,11 +722,13 @@
       }
 
       sortedKeywords.forEach(([keyword, hits]) => {
-        const keywordInfo = KEYWORD_ACTION_MAP[keyword] || { name: keyword, action: "Inspect logs for root failure trigger." };
-        
+        const matchedConfig = KEYWORD_CONFIGS.find(c => c.displayKey.toLowerCase() === keyword.toLowerCase());
+        const actionText = matchedConfig ? matchedConfig.action : "Inspect logs for root failure trigger.";
+        const titleName = matchedConfig ? matchedConfig.name : keyword;
+
         const item = document.createElement("div");
         item.className = "flex items-center justify-between text-xs bg-rose-50/50 hover:bg-rose-50 border border-rose-200 hover:border-rose-300 rounded-xl p-3 cursor-pointer transition-all bounce-tap group card-hover shadow-sm";
-        item.onclick = () => openActionModal('KEYWORD', keywordInfo.name, hits, keywordInfo.action, 'keyword');
+        item.onclick = () => openActionModal('KEYWORD', titleName, hits, actionText, 'keyword');
 
         item.innerHTML = `
           <div class="flex items-center space-x-2.5 overflow-hidden">
@@ -857,12 +904,15 @@
             MASTER_ERROR_MAP[num]?.action || ""
           ];
         }),
-        ...Object.entries(analysisData.keywordErrors).map(([kw, hits]) => [
-          `KEYWORD: ${kw}`,
-          KEYWORD_ACTION_MAP[kw]?.name || kw,
-          hits,
-          KEYWORD_ACTION_MAP[kw]?.action || ""
-        ])
+        ...Object.entries(analysisData.keywordErrors).map(([kw, hits]) => {
+          const cfg = KEYWORD_CONFIGS.find(c => c.displayKey.toLowerCase() === kw.toLowerCase());
+          return [
+            `KEYWORD: ${kw}`,
+            cfg ? cfg.name : kw,
+            hits,
+            cfg ? cfg.action : ""
+          ];
+        })
       ];
 
       const wb = XLSX.utils.book_new();
@@ -881,7 +931,7 @@
       setTimeout(() => {
         const demoLogs1 = `
 Line 27552 DISPENSER FAILURE (02:02NO NOTES DISPENSED)
-Line 27553 Switch conn failure
+Line 27553 SWITCH CONN. FAILURE
 Line 27554 DISPENSER FAILURE (11:11NO NOTES DISPENSED)
 Line 27555 app level error
 Line 27556 E*2
@@ -892,7 +942,7 @@ Line 1235 suspect-1
 Line 1236 ATR error
 Line 1237 DISPENSER FAILURE (56:56NO NOTES DISPENSED)
 Line 1238 DISPENSER FAILURE (69:FID A CARD REMOVE TIMEOUT)
-Line 1239 pin encryption failure
+Line 1239 SWITCH CONN. FAILURE
 Line 1240 E*2
         `;
 
