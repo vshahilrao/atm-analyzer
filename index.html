@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-950">
+<html lang="en" class="h-full bg-slate-50">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ATM Log Analytics & Diagnostics Dashboard</title>
+  <title>ATM Log Analytics & Diagnostics Dashboard (Light Theme)</title>
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
@@ -28,7 +28,7 @@
     }
     .card-hover:hover {
       transform: translateY(-3px);
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
     }
     /* Scrollbar styles */
     ::-webkit-scrollbar {
@@ -36,49 +36,49 @@
       height: 8px;
     }
     ::-webkit-scrollbar-track {
-      background: #0f172a;
+      background: #f1f5f9;
     }
     ::-webkit-scrollbar-thumb {
-      background: #334155;
+      background: #cbd5e1;
       border-radius: 4px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #475569;
+      background: #94a3b8;
     }
-    /* Dark Glassmorphism Cards */
+    /* Light Theme Glassmorphism Cards */
     .aesthetic-card {
-      background: rgba(15, 23, 42, 0.85);
+      background: rgba(255, 255, 255, 0.9);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(51, 65, 85, 0.6);
-      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
     }
   </style>
 </head>
-<body class="h-full font-sans antialiased bg-slate-950 text-slate-100 flex flex-col min-h-screen">
+<body class="h-full font-sans antialiased bg-slate-50 text-slate-800 flex flex-col min-h-screen">
 
   <!-- Top Navigation Header -->
-  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-30">
+  <header class="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-30 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center space-x-3">
-        <div class="p-2.5 bg-indigo-600/20 text-indigo-400 rounded-xl border border-indigo-500/30">
+        <div class="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100">
           <i class="fa-solid fa-server text-xl bounce-tap inline-block"></i>
         </div>
         <div>
-          <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+          <h1 class="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
             ATM Log Diagnostics
-            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v2.6 Dual-Trend Interactive</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">v2.7 Light Theme</span>
           </h1>
-          <p class="text-xs text-slate-400">Dispenser Error Code & Monitored Keyword Intelligence</p>
+          <p class="text-xs text-slate-500">Dispenser Error Code & Monitored Keyword Intelligence</p>
         </div>
       </div>
 
       <div class="flex items-center space-x-3">
-        <button id="exportExcelBtn" onclick="exportToExcel()" class="hidden bounce-tap bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all flex items-center space-x-2 shadow-lg shadow-emerald-900/20 border border-emerald-500/30">
+        <button id="exportExcelBtn" onclick="exportToExcel()" class="hidden bounce-tap bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all flex items-center space-x-2 shadow-lg shadow-emerald-600/20 border border-emerald-500">
           <i class="fa-solid fa-file-excel"></i>
           <span>Export Excel Report</span>
         </button>
-        <button onclick="triggerDemoData()" class="bounce-tap bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium px-3.5 py-2 rounded-xl transition-all border border-slate-700 flex items-center space-x-1.5">
-          <i class="fa-solid fa-play-circle text-indigo-400"></i>
+        <button onclick="triggerDemoData()" class="bounce-tap bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 text-xs font-medium px-3.5 py-2 rounded-xl transition-all border border-slate-300 flex items-center space-x-1.5 shadow-sm">
+          <i class="fa-solid fa-play-circle text-indigo-600"></i>
           <span>Load Sample Logs</span>
         </button>
       </div>
@@ -89,32 +89,32 @@
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
 
     <!-- FILE UPLOAD DROPZONE -->
-    <section class="aesthetic-card rounded-2xl p-6 transition-all border-dashed border-2 border-indigo-500/30 hover:border-indigo-400/60 bg-gradient-to-r from-indigo-950/20 via-slate-900/40 to-slate-900/20">
+    <section class="aesthetic-card rounded-2xl p-6 transition-all border-dashed border-2 border-indigo-300 hover:border-indigo-400 bg-gradient-to-r from-indigo-50/50 via-white to-slate-50/50">
       <div class="flex flex-col items-center justify-center text-center cursor-pointer" onclick="document.getElementById('logFileInput').click()">
         <input type="file" id="logFileInput" class="hidden" multiple accept=".log,.txt,.zip" onchange="handleFileUpload(event)">
-        <div class="w-14 h-14 bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 rounded-2xl flex items-center justify-center mb-3 bounce-tap shadow-lg shadow-indigo-950/50">
+        <div class="w-14 h-14 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-2xl flex items-center justify-center mb-3 bounce-tap shadow-sm">
           <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
         </div>
-        <h3 class="text-base font-semibold text-slate-100">Drop ATM Log Files or ZIP Archives here</h3>
-        <p class="text-xs text-slate-400 mt-1">Extracts exact DISPENSER FAILURE (XX:...) patterns, 01-99 codes, and Monitored System Keywords (including E*2)</p>
-        <div class="mt-4 flex flex-wrap justify-center items-center gap-2 text-xs text-slate-400">
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
+        <h3 class="text-base font-semibold text-slate-900">Drop ATM Log Files or ZIP Archives here</h3>
+        <p class="text-xs text-slate-500 mt-1">Extracts exact DISPENSER FAILURE (XX:...) patterns, 01-99 codes, and Monitored System Keywords (including E*2)</p>
+        <div class="mt-4 flex flex-wrap justify-center items-center gap-2 text-xs text-slate-600">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
             01-99 Dispenser Code Engine
           </span>
           <span>•</span>
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
             Interactive Keyword Actions
           </span>
           <span>•</span>
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700" id="fileCountBadge">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200" id="fileCountBadge">
             ZIP Bundle Counter
           </span>
         </div>
       </div>
 
       <!-- Processing Progress Indicator -->
-      <div id="processingStatus" class="hidden mt-4 pt-4 border-t border-slate-800 text-center">
-        <div class="flex items-center justify-center space-x-2 text-sm text-indigo-400 font-medium">
+      <div id="processingStatus" class="hidden mt-4 pt-4 border-t border-slate-200 text-center">
+        <div class="flex items-center justify-center space-x-2 text-sm text-indigo-600 font-medium">
           <i class="fa-solid fa-spinner fa-spin"></i>
           <span id="statusText">Analyzing Log Content...</span>
         </div>
@@ -123,42 +123,42 @@
 
     <!-- METRICS SUMMARY CARDS -->
     <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
+      <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between shadow-sm">
         <div>
-          <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Evaluated Hits</p>
-          <h4 id="statTotalEvents" class="text-2xl font-bold text-white mt-1">0</h4>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Evaluated Hits</p>
+          <h4 id="statTotalEvents" class="text-2xl font-bold text-slate-900 mt-1">0</h4>
         </div>
-        <div class="p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20 bounce-tap">
+        <div class="p-3 bg-blue-50 text-blue-600 rounded-xl border border-blue-100 bounce-tap">
           <i class="fa-solid fa-layer-group text-xl"></i>
         </div>
       </div>
 
-      <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
+      <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between shadow-sm">
         <div>
-          <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Dispenser Failure Hits</p>
-          <h4 id="statCodeErrors" class="text-2xl font-bold text-indigo-400 mt-1">0</h4>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Dispenser Failure Hits</p>
+          <h4 id="statCodeErrors" class="text-2xl font-bold text-indigo-600 mt-1">0</h4>
         </div>
-        <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20 bounce-tap">
+        <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 bounce-tap">
           <i class="fa-solid fa-microchip text-xl"></i>
         </div>
       </div>
 
-      <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
+      <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between shadow-sm">
         <div>
-          <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Monitored Keywords</p>
-          <h4 id="statKeywordErrors" class="text-2xl font-bold text-rose-400 mt-1">0</h4>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Monitored Keywords</p>
+          <h4 id="statKeywordErrors" class="text-2xl font-bold text-rose-600 mt-1">0</h4>
         </div>
-        <div class="p-3 bg-rose-500/10 text-rose-400 rounded-xl border border-rose-500/20 bounce-tap">
+        <div class="p-3 bg-rose-50 text-rose-600 rounded-xl border border-rose-100 bounce-tap">
           <i class="fa-solid fa-triangle-exclamation text-xl"></i>
         </div>
       </div>
 
-      <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between">
+      <div class="aesthetic-card rounded-xl p-4 flex items-center justify-between shadow-sm">
         <div>
-          <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Analyzed Log Files</p>
-          <h4 id="statLogFiles" class="text-2xl font-bold text-amber-400 mt-1">0</h4>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Analyzed Log Files</p>
+          <h4 id="statLogFiles" class="text-2xl font-bold text-amber-600 mt-1">0</h4>
         </div>
-        <div class="p-3 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20 bounce-tap">
+        <div class="p-3 bg-amber-50 text-amber-600 rounded-xl border border-amber-100 bounce-tap">
           <i class="fa-solid fa-folder-open text-xl"></i>
         </div>
       </div>
@@ -168,22 +168,22 @@
     <div id="analyticsSection" class="space-y-6">
 
       <!-- DISPENSER FAILURE CODE COUNTS -->
-      <section class="aesthetic-card rounded-2xl p-6">
+      <section class="aesthetic-card rounded-2xl p-6 shadow-sm">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h2 class="text-base font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-chart-line text-indigo-400"></i>
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-chart-line text-indigo-600"></i>
               Dispenser Failure Code Counts (Sorted Highest to Lowest Hits)
             </h2>
-            <p class="text-xs text-slate-400">Extracted directly from DISPENSER FAILURE (XX:...) in logs. Click any card for technical action points.</p>
+            <p class="text-xs text-slate-500">Extracted directly from DISPENSER FAILURE (XX:...) in logs. Click any card for technical action points.</p>
           </div>
-          <span class="text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 px-3 py-1 rounded-full" id="errorTypeCount">0 Active Codes</span>
+          <span class="text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 rounded-full" id="errorTypeCount">0 Active Codes</span>
         </div>
 
         <!-- ERROR BOXES GRID -->
         <div id="errorGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          <div class="col-span-full text-center py-12 text-slate-500">
-            <i class="fa-solid fa-file-circle-question text-4xl mb-2 opacity-40"></i>
+          <div class="col-span-full text-center py-12 text-slate-400">
+            <i class="fa-solid fa-file-circle-question text-4xl mb-2 opacity-50"></i>
             <p class="text-sm">No log data analyzed yet. Upload files or load sample logs to view failure counts.</p>
           </div>
         </div>
@@ -192,35 +192,35 @@
       <!-- MONITORED KEYWORDS & DUAL-TREND CHART -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <!-- MONITORED KEYWORD FAILURES (NOW CLICKABLE CARDS) -->
+        <!-- MONITORED KEYWORD FAILURES (CLICKABLE CARDS) -->
         <div class="lg:col-span-1 space-y-6">
-          <div class="aesthetic-card rounded-2xl p-5">
+          <div class="aesthetic-card rounded-2xl p-5 shadow-sm h-full flex flex-col">
             <div class="mb-3">
-              <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                <i class="fa-solid fa-key text-rose-400"></i>
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-key text-rose-600"></i>
                 Monitored Keyword Failures
               </h3>
-              <p class="text-[11px] text-slate-400 mt-0.5">Click any keyword card to view action points.</p>
+              <p class="text-[11px] text-slate-500 mt-0.5">Click any keyword card to view action points.</p>
             </div>
-            <div id="keywordList" class="space-y-2.5">
-              <div class="text-xs text-slate-500 italic">No keyword failures detected</div>
+            <div id="keywordList" class="space-y-2.5 flex-1">
+              <div class="text-xs text-slate-400 italic">No keyword failures detected</div>
             </div>
           </div>
         </div>
 
         <!-- DUAL DATASET DAY BY DAY TREND CHART -->
-        <div class="lg:col-span-2 aesthetic-card rounded-2xl p-5 flex flex-col justify-between">
+        <div class="lg:col-span-2 aesthetic-card rounded-2xl p-5 shadow-sm flex flex-col justify-between">
           <div class="flex items-center justify-between mb-2">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-calendar-days text-indigo-400"></i>
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-calendar-days text-indigo-600"></i>
               Daily Failure Trend Analysis
             </h3>
             <div class="flex items-center gap-4 text-xs">
-              <span class="flex items-center gap-1.5 text-indigo-300">
-                <span class="w-3 h-3 rounded-full bg-indigo-500 inline-block"></span> Dispenser Codes
+              <span class="flex items-center gap-1.5 text-indigo-600 font-medium">
+                <span class="w-3 h-3 rounded-full bg-indigo-600 inline-block"></span> Dispenser Codes
               </span>
-              <span class="flex items-center gap-1.5 text-rose-300">
-                <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> Monitored Keywords
+              <span class="flex items-center gap-1.5 text-rose-600 font-medium">
+                <span class="w-3 h-3 rounded-full bg-rose-600 inline-block"></span> Monitored Keywords
               </span>
             </div>
           </div>
@@ -232,16 +232,16 @@
       </div>
 
       <!-- DAY BY DAY DATA TABLE -->
-      <section class="aesthetic-card rounded-2xl p-6">
+      <section class="aesthetic-card rounded-2xl p-6 shadow-sm">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-base font-bold text-white flex items-center gap-2">
-            <i class="fa-solid fa-table-list text-indigo-400"></i>
+          <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <i class="fa-solid fa-table-list text-indigo-600"></i>
             Day-by-Day Error & Hit Breakdown Table
           </h2>
         </div>
         <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-slate-300">
-            <thead class="bg-slate-900/90 text-slate-400 text-xs uppercase font-semibold border-b border-slate-800">
+          <table class="w-full text-left text-sm text-slate-600">
+            <thead class="bg-slate-100 text-slate-700 text-xs uppercase font-semibold border-b border-slate-200">
               <tr>
                 <th class="px-4 py-3 rounded-l-lg">Extracted Date</th>
                 <th class="px-4 py-3">Dispenser Code Failures</th>
@@ -249,9 +249,9 @@
                 <th class="px-4 py-3 text-right rounded-r-lg">Total Daily Hits</th>
               </tr>
             </thead>
-            <tbody id="dailyTableBody" class="divide-y divide-slate-800/60">
+            <tbody id="dailyTableBody" class="divide-y divide-slate-100">
               <tr>
-                <td colspan="4" class="text-center py-6 text-xs text-slate-500">Upload log files to view day-by-day distribution.</td>
+                <td colspan="4" class="text-center py-6 text-xs text-slate-400">Upload log files to view day-by-day distribution.</td>
               </tr>
             </tbody>
           </table>
@@ -263,42 +263,42 @@
   </main>
 
   <!-- ACTION POINTS MODAL -->
-  <div id="actionModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-slate-800 transform transition-all scale-95 opacity-0" id="modalContent">
-      <div class="flex items-start justify-between border-b border-slate-800 pb-3">
+  <div id="actionModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-slate-200 transform transition-all scale-95 opacity-0" id="modalContent">
+      <div class="flex items-start justify-between border-b border-slate-100 pb-3">
         <div class="flex items-center space-x-3">
-          <div id="modalIconContainer" class="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 bounce-tap">
+          <div id="modalIconContainer" class="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 bounce-tap">
             <i class="fa-solid fa-screwdriver-wrench text-xl"></i>
           </div>
           <div>
-            <span id="modalCodeBadge" class="text-xs font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">CODE 00</span>
-            <h3 id="modalTitle" class="text-base font-bold text-white mt-0.5">Error Description</h3>
+            <span id="modalCodeBadge" class="text-xs font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">CODE 00</span>
+            <h3 id="modalTitle" class="text-base font-bold text-slate-900 mt-0.5">Error Description</h3>
           </div>
         </div>
-        <button onclick="closeModal()" class="text-slate-400 hover:text-white p-1 rounded-lg transition-colors bounce-tap">
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors bounce-tap">
           <i class="fa-solid fa-xmark text-lg"></i>
         </button>
       </div>
 
       <div class="space-y-3">
-        <div class="flex items-center justify-between text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-          <span class="text-slate-400 font-medium">Occurrences in Logs:</span>
-          <span id="modalHits" class="font-bold text-indigo-400 text-sm">0 Hits</span>
+        <div class="flex items-center justify-between text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <span class="text-slate-500 font-medium">Occurrences in Logs:</span>
+          <span id="modalHits" class="font-bold text-indigo-600 text-sm">0 Hits</span>
         </div>
 
         <div>
-          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+          <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-check text-emerald-600"></i>
             Recommended Technical Action Points
           </h4>
-          <ul id="modalActionsList" class="space-y-2 text-xs text-slate-300">
+          <ul id="modalActionsList" class="space-y-2 text-xs text-slate-600">
             <!-- Dynamic Actions -->
           </ul>
         </div>
       </div>
 
       <div class="pt-2 flex justify-end">
-        <button onclick="closeModal()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium px-4 py-2 rounded-xl bounce-tap transition-all border border-slate-700">
+        <button onclick="closeModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-4 py-2 rounded-xl bounce-tap transition-all border border-slate-300">
           Close Diagnostics
         </button>
       </div>
@@ -306,9 +306,9 @@
   </div>
 
   <!-- FOOTER -->
-  <footer class="bg-slate-900/60 border-t border-slate-800/80 py-4 mt-8">
-    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
-      ATM Log Intelligence & Diagnostics Engine • v2.6 Professional Edition
+  <footer class="bg-white border-t border-slate-200 py-4 mt-8 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+      ATM Log Intelligence & Diagnostics Engine • v2.7 Professional Edition (Light Theme)
     </div>
   </footer>
 
@@ -625,8 +625,8 @@
 
       if (sortedErrors.length === 0) {
         grid.innerHTML = `
-          <div class="col-span-full text-center py-12 text-slate-500">
-            <i class="fa-solid fa-circle-check text-4xl mb-2 text-emerald-500/60 opacity-60"></i>
+          <div class="col-span-full text-center py-12 text-slate-400">
+            <i class="fa-solid fa-circle-check text-4xl mb-2 text-emerald-500 opacity-80"></i>
             <p class="text-sm font-medium">No DISPENSER FAILURE codes detected in analyzed log files.</p>
           </div>
         `;
@@ -635,27 +635,27 @@
 
       sortedErrors.forEach(({ formattedCode, count, info }) => {
         const card = document.createElement("div");
-        card.className = "aesthetic-card rounded-xl p-4 hover:border-indigo-500/50 transition-all cursor-pointer bounce-tap group relative overflow-hidden card-hover";
+        card.className = "aesthetic-card rounded-xl p-4 hover:border-indigo-300 transition-all cursor-pointer bounce-tap group relative overflow-hidden card-hover shadow-sm";
         card.onclick = () => openActionModal(`CODE ${formattedCode}`, info.name, count, info.action, 'code');
 
-        const badgeColor = count > 10 ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-indigo-500/20 text-indigo-300 border-indigo-500/30";
+        const badgeColor = count > 10 ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-indigo-50 text-indigo-700 border-indigo-200";
 
         card.innerHTML = `
           <div class="flex items-start justify-between mb-2">
             <span class="text-xs font-bold px-2.5 py-0.5 rounded-md border ${badgeColor}">
               CODE ${formattedCode}
             </span>
-            <span class="text-xs font-bold text-slate-400 group-hover:text-indigo-400 transition-colors flex items-center gap-1">
-              <i class="fa-solid fa-bolt text-xs text-amber-400"></i>
+            <span class="text-xs font-bold text-slate-500 group-hover:text-indigo-600 transition-colors flex items-center gap-1">
+              <i class="fa-solid fa-bolt text-xs text-amber-500"></i>
               ${count} Hits
             </span>
           </div>
-          <h4 class="text-xs font-bold text-slate-100 line-clamp-2 uppercase tracking-tight group-hover:text-indigo-300 transition-colors">
+          <h4 class="text-xs font-bold text-slate-800 line-clamp-2 uppercase tracking-tight group-hover:text-indigo-600 transition-colors">
             ${info.name}
           </h4>
-          <p class="text-[11px] text-slate-400 mt-2 flex items-center justify-between pt-2 border-t border-slate-800">
+          <p class="text-[11px] text-slate-400 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
             <span>Action Points</span>
-            <i class="fa-solid fa-chevron-right text-xs text-slate-500 group-hover:translate-x-1 transition-transform"></i>
+            <i class="fa-solid fa-chevron-right text-xs text-slate-400 group-hover:translate-x-1 transition-transform"></i>
           </p>
         `;
 
@@ -672,7 +672,7 @@
         .sort((a, b) => b[1] - a[1]);
 
       if (sortedKeywords.length === 0) {
-        container.innerHTML = `<div class="text-xs text-slate-500 italic">No keyword failures detected</div>`;
+        container.innerHTML = `<div class="text-xs text-slate-400 italic">No keyword failures detected</div>`;
         return;
       }
 
@@ -680,19 +680,19 @@
         const keywordInfo = KEYWORD_ACTION_MAP[keyword] || { name: keyword, action: "Inspect logs for root failure trigger." };
         
         const item = document.createElement("div");
-        item.className = "flex items-center justify-between text-xs bg-rose-950/20 hover:bg-rose-900/30 border border-rose-500/30 hover:border-rose-400/60 rounded-xl p-3 cursor-pointer transition-all bounce-tap group card-hover";
+        item.className = "flex items-center justify-between text-xs bg-rose-50/50 hover:bg-rose-50 border border-rose-200 hover:border-rose-300 rounded-xl p-3 cursor-pointer transition-all bounce-tap group card-hover shadow-sm";
         item.onclick = () => openActionModal('KEYWORD', keywordInfo.name, hits, keywordInfo.action, 'keyword');
 
         item.innerHTML = `
           <div class="flex items-center space-x-2.5 overflow-hidden">
-            <i class="fa-solid fa-triangle-exclamation text-rose-400 shrink-0"></i>
-            <span class="font-semibold text-rose-200 truncate group-hover:text-white transition-colors">
+            <i class="fa-solid fa-triangle-exclamation text-rose-600 shrink-0"></i>
+            <span class="font-semibold text-rose-900 truncate group-hover:text-rose-950 transition-colors">
               ${keyword}
             </span>
           </div>
           <div class="flex items-center space-x-2 shrink-0">
-            <span class="font-bold text-rose-300 bg-rose-900/40 px-2.5 py-0.5 rounded-lg border border-rose-500/30">${hits} hits</span>
-            <i class="fa-solid fa-chevron-right text-xs text-rose-400/60 group-hover:translate-x-0.5 transition-transform"></i>
+            <span class="font-bold text-rose-700 bg-white px-2.5 py-0.5 rounded-lg border border-rose-200">${hits} hits</span>
+            <i class="fa-solid fa-chevron-right text-xs text-rose-400 group-hover:translate-x-0.5 transition-transform"></i>
           </div>
         `;
         container.appendChild(item);
@@ -706,7 +706,7 @@
       const sortedDates = Object.keys(analysisData.dailyTrend).sort();
 
       if (sortedDates.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-xs text-slate-500">No dated records available.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-xs text-slate-400">No dated records available.</td></tr>`;
         updateChart([], [], []);
         return;
       }
@@ -722,12 +722,12 @@
         keywordData.push(day.keyword || 0);
 
         const tr = document.createElement("tr");
-        tr.className = "hover:bg-slate-900/40 transition-colors";
+        tr.className = "hover:bg-slate-50 transition-colors";
         tr.innerHTML = `
-          <td class="px-4 py-3 font-semibold text-white text-xs">${date}</td>
-          <td class="px-4 py-3 text-indigo-400 font-medium">${day.code || 0}</td>
-          <td class="px-4 py-3 text-rose-400 font-medium">${day.keyword || 0}</td>
-          <td class="px-4 py-3 text-right font-bold text-white">${day.total}</td>
+          <td class="px-4 py-3 font-semibold text-slate-900 text-xs">${date}</td>
+          <td class="px-4 py-3 text-indigo-600 font-medium">${day.code || 0}</td>
+          <td class="px-4 py-3 text-rose-600 font-medium">${day.keyword || 0}</td>
+          <td class="px-4 py-3 text-right font-bold text-slate-900">${day.total}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -745,23 +745,23 @@
             {
               label: 'Dispenser Failures',
               data: [],
-              borderColor: '#818cf8',
-              backgroundColor: 'rgba(99, 102, 241, 0.15)',
+              borderColor: '#4f46e5',
+              backgroundColor: 'rgba(79, 70, 229, 0.1)',
               fill: true,
               tension: 0.35,
               borderWidth: 2,
-              pointBackgroundColor: '#6366f1',
+              pointBackgroundColor: '#4f46e5',
               pointRadius: 4
             },
             {
               label: 'Monitored Keywords',
               data: [],
-              borderColor: '#f43f5e',
-              backgroundColor: 'rgba(244, 63, 94, 0.15)',
+              borderColor: '#e11d48',
+              backgroundColor: 'rgba(225, 29, 72, 0.1)',
               fill: true,
               tension: 0.35,
               borderWidth: 2,
-              pointBackgroundColor: '#f43f5e',
+              pointBackgroundColor: '#e11d48',
               pointRadius: 4
             }
           ]
@@ -773,8 +773,8 @@
             legend: { display: false }
           },
           scales: {
-            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
-            y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', font: { size: 10 } }, beginAtZero: true }
+            x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } },
+            y: { grid: { color: '#f1f5f9' }, ticks: { color: '#64748b', font: { size: 10 } }, beginAtZero: true }
           }
         }
       });
@@ -793,9 +793,9 @@
       badgeEl.innerText = badgeText;
       
       if (type === 'keyword') {
-        badgeEl.className = "text-xs font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30";
+        badgeEl.className = "text-xs font-bold px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200";
       } else {
-        badgeEl.className = "text-xs font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30";
+        badgeEl.className = "text-xs font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200";
       }
 
       document.getElementById("modalTitle").innerText = title;
@@ -807,9 +807,9 @@
       const steps = actionText.split('. ').filter(s => s.trim().length > 0);
       steps.forEach(step => {
         const li = document.createElement("li");
-        li.className = "flex items-start gap-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800";
+        li.className = "flex items-start gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200";
         li.innerHTML = `
-          <i class="fa-solid fa-wrench text-indigo-400 text-xs mt-0.5 shrink-0"></i>
+          <i class="fa-solid fa-wrench text-indigo-600 text-xs mt-0.5 shrink-0"></i>
           <span>${step.endsWith('.') ? step : step + '.'}</span>
         `;
         actionsList.appendChild(li);
