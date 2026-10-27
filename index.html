@@ -320,7 +320,7 @@
     // MASTER DISPENSER ERROR CODE MAPPING (01-99)
     const MASTER_ERROR_MAP = {
       1: { name: "DISPENSED SUCCESSFULLY", action: "Normal operation. No action required." },
-      2: { name: "MOTOR TIMEOUT", action: "Check dispenser motor power supply and cable connectors. Inspect drive gears and belts for jams." },
+      2: { name: "MOTOR TIMEOUT", action: "1 - Physically ensure notes were properly panned and loaded. 2 - Ensure height adjustment spacer is cut according to the denomination present in cassette. 3 - Do pick motor test and ensure minimum of 25 notes picked from cassette. If not need to inspect pick and sar roller condition and replace it.  4 - Ensure there is no overtight when you rotate pick roller gear manually through hand and note comes out freely. 5 - Do dispenser inits of 40 notes from each cassette of 5 times and ensure there is no any pick struggles/time out/cash jams till testing completion." },
       3: { name: "SENSOR FAILURE", action: "Clean optical sensor lenses with isopropyl alcohol. Verify wiring harness continuity." },
       4: { name: "MAX TWIN LIMIT EXCEEDED", action: "1 - Do re-calibration using more soiled notes for particular denom and load the same notes used for calibration and perom dispenser init. Pass criteria is 0 twin purges during dispenser init. 2 - Ensure notes were properly fanned before loading. Avoid loading of sticky notes. Spares recommendations - Twin Sensor Assembly." },
       5: { name: "PRESENTED SUCCESSFULLY", action: "Normal operation. Cash successfully presented to customer." },
