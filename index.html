@@ -14,9 +14,10 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- JSZip for handling uploaded ZIP log bundles -->
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <!-- Pako for uncompressing .gz files -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
   
   <style>
-    /* Bounce tap animation on interactive items */
     .bounce-tap {
       transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
@@ -30,7 +31,6 @@
       transform: translateY(-3px);
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
     }
-    /* Scrollbar styles */
     ::-webkit-scrollbar {
       width: 8px;
       height: 8px;
@@ -45,11 +45,10 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #94a3b8;
     }
-    /* Light Theme Glassmorphism Cards */
     .aesthetic-card {
-      background: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.92);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(226, 232, 240, 0.8);
+      border: 1px solid rgba(226, 232, 240, 0.9);
       box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
     }
   </style>
@@ -57,7 +56,7 @@
 <body class="h-full font-sans antialiased bg-slate-50 text-slate-800 flex flex-col min-h-screen">
 
   <!-- Top Navigation Header -->
-  <header class="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+  <header class="bg-white/95 backdrop-blur border-b border-slate-200 sticky top-0 z-30 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center space-x-3">
         <div class="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100">
@@ -66,16 +65,16 @@
         <div>
           <h1 class="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
             ATM Log Diagnostics
-            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">v2.10 Scrollable Modal</span>
+            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">v4.7 Matrix Edition</span>
           </h1>
-          <p class="text-xs text-slate-500">Dispenser Error Code & Monitored Keyword Intelligence</p>
+          <p class="text-xs text-slate-500">ej_log & ejBackup_log Separated Day-by-Day Breakdown (Syslog Excluded)</p>
         </div>
       </div>
 
       <div class="flex items-center space-x-3">
         <button id="exportExcelBtn" onclick="exportToExcel()" class="hidden bounce-tap bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all flex items-center space-x-2 shadow-lg shadow-emerald-600/20 border border-emerald-500">
           <i class="fa-solid fa-file-excel"></i>
-          <span>Export Excel Report</span>
+          <span>Export Multi-Sheet Report</span>
         </button>
         <button onclick="triggerDemoData()" class="bounce-tap bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 text-xs font-medium px-3.5 py-2 rounded-xl transition-all border border-slate-300 flex items-center space-x-1.5 shadow-sm">
           <i class="fa-solid fa-play-circle text-indigo-600"></i>
@@ -91,23 +90,19 @@
     <!-- FILE UPLOAD DROPZONE -->
     <section class="aesthetic-card rounded-2xl p-6 transition-all border-dashed border-2 border-indigo-300 hover:border-indigo-400 bg-gradient-to-r from-indigo-50/50 via-white to-slate-50/50">
       <div class="flex flex-col items-center justify-center text-center cursor-pointer" onclick="document.getElementById('logFileInput').click()">
-        <input type="file" id="logFileInput" class="hidden" multiple accept=".log,.txt,.zip" onchange="handleFileUpload(event)">
+        <input type="file" id="logFileInput" class="hidden" multiple accept="*/*" onchange="handleFileUpload(event)">
         <div class="w-14 h-14 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-2xl flex items-center justify-center mb-3 bounce-tap shadow-sm">
           <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
         </div>
-        <h3 class="text-base font-semibold text-slate-900">Drop ATM Log Files, ejBackup ZIP, or syslog ZIP Archives here</h3>
-        <p class="text-xs text-slate-500 mt-1">Extracts ejBackup archives, syslog bundles, DISPENSER FAILURE codes, and Monitored Keywords</p>
+        <h3 class="text-base font-semibold text-slate-900">Drop ej_log.zip or ejBackup_log.zip Archives Here</h3>
+        <p class="text-xs text-slate-500 mt-1">Excludes syslog files and extracts exact daily dispenser error & keyword hits</p>
         <div class="mt-4 flex flex-wrap justify-center items-center gap-2 text-xs text-slate-600">
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-            ejBackup & syslog ZIP Support
-          </span>
-          <span>•</span>
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-            01-99 Dispenser Code Engine
+            Strict Date Filtering (No Undated Logs)
           </span>
           <span>•</span>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200" id="fileCountBadge">
-            Bundle Counter
+            0 Log Files Analyzed
           </span>
         </div>
       </div>
@@ -116,7 +111,7 @@
       <div id="processingStatus" class="hidden mt-4 pt-4 border-t border-slate-200 text-center">
         <div class="flex items-center justify-center space-x-2 text-sm text-indigo-600 font-medium">
           <i class="fa-solid fa-spinner fa-spin"></i>
-          <span id="statusText">Analyzing Archive & Log Content...</span>
+          <span id="statusText">Analyzing daily error matrix...</span>
         </div>
       </div>
     </section>
@@ -167,7 +162,7 @@
     <!-- DASHBOARD CONTENT GRID -->
     <div id="analyticsSection" class="space-y-6">
 
-      <!-- DISPENSER FAILURE CODE COUNTS -->
+      <!-- DISPENSER FAILURE CODE CARDS -->
       <section class="aesthetic-card rounded-2xl p-6 shadow-sm">
         <div class="flex items-center justify-between mb-4">
           <div>
@@ -175,9 +170,9 @@
               <i class="fa-solid fa-chart-line text-indigo-600"></i>
               Dispenser Failure Code Counts (Sorted Highest to Lowest Hits)
             </h2>
-            <p class="text-xs text-slate-500">Extracted directly from DISPENSER FAILURE (XX:...) in logs. Click any card for technical action points.</p>
+            <p class="text-xs text-slate-500">Extracted directly from DISPENSER FAILURE codes in logs. Click any card for technical action points.</p>
           </div>
-          <span class="text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 rounded-full" id="errorTypeCount">0 Active Codes</span>
+          <span class="text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-1 rounded-full" id="errorTypeCount">0 Active Codes</span>
         </div>
 
         <!-- ERROR BOXES GRID -->
@@ -192,7 +187,7 @@
       <!-- MONITORED KEYWORDS & DUAL-TREND CHART -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <!-- MONITORED KEYWORD FAILURES (CLICKABLE CARDS) -->
+        <!-- MONITORED KEYWORD FAILURES -->
         <div class="lg:col-span-1 space-y-6">
           <div class="aesthetic-card rounded-2xl p-5 shadow-sm h-full flex flex-col">
             <div class="mb-3">
@@ -231,32 +226,64 @@
 
       </div>
 
-      <!-- DAY BY DAY DATA TABLE -->
-      <section class="aesthetic-card rounded-2xl p-6 shadow-sm">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
-            <i class="fa-solid fa-table-list text-indigo-600"></i>
-            Day-by-Day Error & Hit Breakdown Table
-          </h2>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-slate-600">
-            <thead class="bg-slate-100 text-slate-700 text-xs uppercase font-semibold border-b border-slate-200">
-              <tr>
-                <th class="px-4 py-3 rounded-l-lg">Extracted Date</th>
-                <th class="px-4 py-3">Dispenser Code Failures</th>
-                <th class="px-4 py-3">Keyword Failures</th>
-                <th class="px-4 py-3 text-right rounded-r-lg">Total Daily Hits</th>
-              </tr>
-            </thead>
-            <tbody id="dailyTableBody" class="divide-y divide-slate-100">
-              <tr>
-                <td colspan="4" class="text-center py-6 text-xs text-slate-400">Upload log files to view day-by-day distribution.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <!-- SEPARATED DAY-BY-DAY BREAKDOWN TABLES -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- TABLE 1: DAY-BY-DAY DISPENSER CODE BREAKDOWN -->
+        <section class="aesthetic-card rounded-2xl p-6 shadow-sm flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid id-card fa-microchip text-indigo-600"></i>
+              Day-by-Day Dispenser Code Breakdown
+            </h2>
+            <span class="text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 px-2.5 py-0.5 rounded-full">Error Codes 01–99</span>
+          </div>
+          <div class="overflow-x-auto flex-1">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-indigo-50/60 text-indigo-900 uppercase font-semibold border-b border-indigo-100">
+                <tr>
+                  <th class="px-3 py-2.5 rounded-l-lg">Date</th>
+                  <th class="px-3 py-2.5">Active Dispenser Codes & Hits</th>
+                  <th class="px-3 py-2.5 text-right rounded-r-lg">Total Code Hits</th>
+                </tr>
+              </thead>
+              <tbody id="dailyCodeTableBody" class="divide-y divide-slate-100">
+                <tr>
+                  <td colspan="3" class="text-center py-6 text-xs text-slate-400">No dated dispenser records available.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- TABLE 2: DAY-BY-DAY KEYWORD BREAKDOWN -->
+        <section class="aesthetic-card rounded-2xl p-6 shadow-sm flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-key text-rose-600"></i>
+              Day-by-Day Keyword Failure Breakdown
+            </h2>
+            <span class="text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-full">Monitored Keywords</span>
+          </div>
+          <div class="overflow-x-auto flex-1">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-rose-50/60 text-rose-900 uppercase font-semibold border-b border-rose-100">
+                <tr>
+                  <th class="px-3 py-2.5 rounded-l-lg">Date</th>
+                  <th class="px-3 py-2.5">Active Keywords & Hits</th>
+                  <th class="px-3 py-2.5 text-right rounded-r-lg">Total Keyword Hits</th>
+                </tr>
+              </thead>
+              <tbody id="dailyKeywordTableBody" class="divide-y divide-slate-100">
+                <tr>
+                  <td colspan="3" class="text-center py-6 text-xs text-slate-400">No dated keyword records available.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
 
     </div>
 
@@ -291,7 +318,6 @@
             <i class="fa-solid fa-circle-check text-emerald-600"></i>
             Recommended Technical Action Points
           </h4>
-          <!-- Scrollable Action Points Container added here -->
           <div class="max-h-60 overflow-y-auto pr-1">
             <ul id="modalActionsList" class="space-y-2 text-xs text-slate-600">
               <!-- Dynamic Actions -->
@@ -311,13 +337,12 @@
   <!-- FOOTER -->
   <footer class="bg-white border-t border-slate-200 py-4 mt-8 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
-      ATM Log Intelligence & Diagnostics Engine • v2.10 Professional Edition (Light Theme)
+      ATM Log Intelligence & Diagnostics Engine • v4.7 Matrix Edition
     </div>
   </footer>
 
   <!-- APPLICATION JAVASCRIPT LOGIC -->
   <script>
-    // MASTER DISPENSER ERROR CODE MAPPING (01-99)
     const MASTER_ERROR_MAP = {
       1: { name: "DISPENSED SUCCESSFULLY", action: "Normal operation. No action required." },
       2: { name: "MOTOR TIMEOUT", action: "1 - Physically ensure notes were properly panned and loaded. 2 - Ensure height adjustment spacer is cut according to the denomination present in cassette. 3 - Do pick motor test and ensure minimum of 25 notes picked from cassette. If not need to inspect pick and sar roller condition and replace it.  4 - Ensure there is no overtight when you rotate pick roller gear manually through hand and note comes out freely. 5 - Do dispenser inits of 40 notes from each cassette of 5 times and ensure there is no any pick struggles/time out/cash jams till testing completion." },
@@ -420,90 +445,27 @@
       99: { name: "UNKNOWN ERROR", action: "Consult manufacturer hardware logs." }
     };
 
-    // MONITORED KEYWORDS & ACTION MAP
     const KEYWORD_CONFIGS = [
-      { 
-        keys: ["switch conn failure", "switch conn. failure", "switch connection failure"], 
-        displayKey: "SWITCH CONN. FAILURE",
-        name: "Switch Connection Failure", 
-        action: "Check network switch Ethernet patch cable. Verify ATM router signal, WAN connectivity, and switch IP routing." 
-      },
-      { 
-        keys: ["app level error"], 
-        displayKey: "app level error",
-        name: "Application Level Error", 
-        action: "Inspect terminal application software logs. Restart ATM runtime middleware and re-verify session settings." 
-      },
-      { 
-        keys: ["atr error"], 
-        displayKey: "ATR error",
-        name: "Smart Card Reader ATR Error", 
-        action: "Check smart card test, if it getting fail, check the EMV pins condition. For any further support contact techteam." 
-      },
-      { 
-        keys: ["suspect - 1"], 
-        displayKey: "suspect - 1",
-        name: "Suspect Banknote Detected (Path 1)", 
-        action: "Inspect suspect banknote divert bin. Recalibrate optical note validator/thickness sensors." 
-      },
-      { 
-        keys: ["suspect - 2"], 
-        displayKey: "suspect - 2",
-        name: "Suspect Banknote Detected (Path 2)", 
-        action: "Inspect suspect banknote transport chute. Check optical sensor array for dust or alignment drift." 
-      },
-      { 
-        keys: ["pin encryption failure"], 
-        displayKey: "pin encryption failure",
-        name: "EPP PIN Encryption Failure", 
-        action: "Verify Encrypting PIN Pad (EPP) master key status. Check serial/USB connection to EPP board." 
-      },
-      { 
-        keys: ["switch resp-timeout", "switch response timeout"], 
-        displayKey: "switch resp-timeout",
-        name: "Switch Response Timeout", 
-        action: "Check host network latency. Inspect host gateway parameters and router firewall socket connections." 
-      },
-      { 
-        keys: ["too many present error", "too many present error"], 
-        displayKey: "TOO MANY PRESENT ERROR",
-        name: "too many present error", 
-        action: "Check shutter present sensor, cable connection." 
-      },
-       { 
-        keys: ["CARDREADER FAILURE - RESPONSE_ERROR", "CARDREADER FAILURE - RESPONSE_ERROR"], 
-        displayKey: "CARDREADER FAILURE - RESPONSE_ERROR",
-        name: "CARDREADER FAILURE - RESPONSE_ERROR", 
-        action: "Check card reader pcb board sensor, cable connection." 
-      },
-      { 
-        keys: ["command reject"], 
-        displayKey: "command reject",
-        name: "Command Rejected by Peripheral", 
-        action: "Verify device driver protocol compatibility. Re-send command sequence or perform module reset." 
-      },
-       { 
-        keys: ["Power cycle"], 
-        displayKey: "POWER CYCLE",
-        name: "Power cycle Happened", 
-        action: "the reason for the power cycle that happened, as it may have been caused by an abrupt power failure or manual intervention. Please share the CCTV and DVSS footage are unavailable to verify this." 
-      },
-      { 
-        keys: ["e*2"], 
-        displayKey: "E*2",
-        name: "E*2 Communication Fault", 
-        action: "Inspect hardware module interface and E*2 line communication protocol for corrupted packet transmissions or hardware disconnects." 
-      }
+      { keys: ["switch conn failure", "switch conn. failure", "switch connection failure"], displayKey: "SWITCH CONN. FAILURE", name: "Switch Connection Failure", action: "Check network switch Ethernet patch cable. Verify ATM router signal, WAN connectivity, and switch IP routing." },
+      { keys: ["app level error"], displayKey: "app level error", name: "Application Level Error", action: "Inspect terminal application software logs. Restart ATM runtime middleware and re-verify session settings." },
+      { keys: ["atr error"], displayKey: "ATR error", name: "Smart Card Reader ATR Error", action: "Check smart card test, if it getting fail, check the EMV pins condition. For any further support contact techteam." },
+      { keys: ["suspect - 1"], displayKey: "suspect - 1", name: "Suspect Banknote Detected (Path 1)", action: "Inspect suspect banknote divert bin. Recalibrate optical note validator/thickness sensors." },
+      { keys: ["suspect - 2"], displayKey: "suspect - 2", name: "Suspect Banknote Detected (Path 2)", action: "Inspect suspect banknote transport chute. Check optical sensor array for dust or alignment drift." },
+      { keys: ["pin encryption failure"], displayKey: "pin encryption failure", name: "EPP PIN Encryption Failure", action: "Verify Encrypting PIN Pad (EPP) master key status. Check serial/USB connection to EPP board." },
+      { keys: ["switch resp-timeout", "switch response timeout"], displayKey: "switch resp-timeout", name: "Switch Response Timeout", action: "Check host network latency. Inspect host gateway parameters and router firewall socket connections." },
+      { keys: ["too many present error"], displayKey: "TOO MANY PRESENT ERROR", name: "too many present error", action: "Check shutter present sensor, cable connection." },
+      { keys: ["cardreader failure - response_error"], displayKey: "CARDREADER FAILURE - RESPONSE_ERROR", name: "CARDREADER FAILURE - RESPONSE_ERROR", action: "Check card reader pcb board sensor, cable connection." },
+      { keys: ["command reject"], displayKey: "command reject", name: "Command Rejected by Peripheral", action: "Verify device driver protocol compatibility. Re-send command sequence or perform module reset." },
+      { keys: ["power cycle"], displayKey: "POWER CYCLE", name: "Power cycle Happened", action: "The reason for the power cycle that happened, as it may have been caused by an abrupt power failure or manual intervention." },
+      { keys: ["e*2"], displayKey: "E*2", name: "E*2 Communication Fault", action: "Inspect hardware module interface and E*2 line communication protocol for corrupted packet transmissions." }
     ];
 
-    // Regex to capture the exact code digits immediately inside DISPENSER FAILURE (XX:...)
     const DISPENSER_FAILURE_REGEX = /DISPENSER\s+FAILURE\s*\(\s*(\d{1,2})/gi;
 
-    // Multi-format Date Extractor
     const DATE_PATTERNS = [
-      /(\d{4}[-_/.]\d{2}[-_/.]\d{2})/,   // YYYY-MM-DD or YYYY_MM_DD
-      /(\d{2}[-_/.]\d{2}[-_/.]\d{4})/,   // DD-MM-YYYY
-      /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\b/i
+      /(\d{4}[-_/.]\d{2}[-_/.]\d{2})/,   // YYYY-MM-DD
+      /(\d{2}[-_/.]\d{2}[-_/.]\d{4})/,   // DD-MM-YYYY or MM-DD-YYYY
+      /\b(\d{1,2}[-_/](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[-_/]\d{2,4})\b/i
     ];
 
     let analysisData = {
@@ -512,6 +474,8 @@
       codeErrors: {},     
       keywordErrors: {},  
       dailyTrend: {},     
+      dailyCodes: {},     // Date -> { codeNum: count }
+      dailyKeywords: {},  // Date -> { keywordKey: count }
       detailedRecords: [] 
     };
 
@@ -525,17 +489,28 @@
       const files = event.target.files;
       if (!files || files.length === 0) return;
 
-      showProcessing(true, "Reading uploaded log file(s) and archives...");
+      showProcessing(true, "Analyzing verified electronic journal log files (Syslog excluded)...");
       resetDataStore();
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        if (file.name.toLowerCase().endsWith(".zip")) {
-          await processZipFile(file);
+        const arrayBuffer = await file.arrayBuffer();
+
+        if (isZipSignature(arrayBuffer)) {
+          await parseTargetZipArchive(arrayBuffer);
+        } else if (isGzipSignature(arrayBuffer) || file.name.toLowerCase().endsWith(".gz")) {
+          const textContent = decodeGzipBuffer(arrayBuffer);
+          if (textContent && isTargetLogFile(file.name)) {
+            analysisData.processedFileCount++;
+            processLogContent(textContent, file.name);
+          }
         } else {
-          analysisData.processedFileCount++;
-          const content = await readFileAsText(file);
-          processLogContent(content, file.name);
+          if (isTargetLogFile(file.name)) {
+            analysisData.processedFileCount++;
+            const decoder = new TextDecoder("utf-8", { fatal: false });
+            const textContent = decoder.decode(arrayBuffer);
+            processLogContent(textContent, file.name);
+          }
         }
       }
 
@@ -543,39 +518,70 @@
       renderDashboard();
     }
 
-    function readFileAsText(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = (e) => reject(e);
-        reader.readAsText(file);
-      });
+    function isZipSignature(arrayBuffer) {
+      if (!arrayBuffer || arrayBuffer.byteLength < 4) return false;
+      const arr = new Uint8Array(arrayBuffer);
+      return arr[0] === 0x50 && arr[1] === 0x4B;
     }
 
-    async function processZipFile(zipFile) {
+    function isGzipSignature(arrayBuffer) {
+      if (!arrayBuffer || arrayBuffer.byteLength < 2) return false;
+      const arr = new Uint8Array(arrayBuffer);
+      return arr[0] === 0x1F && arr[1] === 0x8B;
+    }
+
+    function decodeGzipBuffer(arrayBuffer) {
+      try {
+        return pako.ungzip(new Uint8Array(arrayBuffer), { to: 'string' });
+      } catch (err) {
+        console.error("GZIP decompression error:", err);
+        return null;
+      }
+    }
+
+    function isTargetLogFile(filename) {
+      const lower = filename.toLowerCase();
+      if (lower.includes('syslog')) return false;
+      return lower.includes('ej') || lower.includes('ejbackup') || lower.endsWith('.log') || lower.endsWith('.gz');
+    }
+
+    async function parseTargetZipArchive(zipBuffer) {
       try {
         const zip = new JSZip();
-        const unzipped = await zip.loadAsync(zipFile);
-        
-        const fileKeys = Object.keys(unzipped.files).filter(fn => {
-          const lower = fn.toLowerCase();
-          return !unzipped.files[fn].dir && (lower.endsWith('.log') || lower.endsWith('.txt') || lower.endsWith('.dat') || lower.endsWith('.ej') || lower.endsWith('.zip'));
-        });
+        const loadedZip = await zip.loadAsync(zipBuffer);
+        const entries = Object.keys(loadedZip.files);
 
-        for (const filename of fileKeys) {
-          const lower = filename.toLowerCase();
-          if (lower.endsWith('.zip')) {
-            const nestedZipBlob = await unzipped.files[filename].async("blob");
-            await processZipFile(new File([nestedZipBlob], filename));
-          } else {
-            analysisData.processedFileCount++;
-            const content = await unzipped.files[filename].async("text");
-            processLogContent(content, filename);
+        for (const entryName of entries) {
+          const zipEntry = loadedZip.files[entryName];
+          if (zipEntry.dir) continue;
+          if (entryName.toLowerCase().includes('syslog')) continue;
+
+          const innerBuffer = await zipEntry.async("arraybuffer");
+          if (isZipSignature(innerBuffer) || entryName.toLowerCase().endsWith(".zip")) {
+            await parseTargetZipArchive(innerBuffer);
+          } else if (isTargetLogFile(entryName)) {
+            if (isGzipSignature(innerBuffer) || entryName.toLowerCase().endsWith(".gz")) {
+              const textContent = decodeGzipBuffer(innerBuffer);
+              if (textContent && textContent.trim().length > 0) {
+                analysisData.processedFileCount++;
+                processLogContent(textContent, entryName);
+              }
+            } else {
+              try {
+                const decoder = new TextDecoder("utf-8", { fatal: false });
+                const textContent = decoder.decode(innerBuffer);
+                if (textContent && textContent.trim().length > 0) {
+                  analysisData.processedFileCount++;
+                  processLogContent(textContent, entryName);
+                }
+              } catch (err) {
+                // Ignore
+              }
+            }
           }
         }
       } catch (err) {
-        console.error("ZIP processing error:", err);
-        alert("Error reading ZIP archive: " + zipFile.name);
+        console.error("Error unpacking zip archive:", err);
       }
     }
 
@@ -586,6 +592,8 @@
         codeErrors: {},
         keywordErrors: {},
         dailyTrend: {},
+        dailyCodes: {},
+        dailyKeywords: {},
         detailedRecords: []
       };
     }
@@ -598,31 +606,40 @@
         if (!line.trim()) return;
 
         const lineDateMatch = extractDateString(line);
-        const dateStr = lineDateMatch || fileDateMatch || "Undated Logs";
-        const lowerLine = line.toLowerCase();
+        const dateStr = lineDateMatch || fileDateMatch;
+        if (!dateStr) return;
 
+        const lowerLine = line.toLowerCase();
         let lineMatched = false;
 
-        // PARSE EXACT CODE INSIDE DISPENSER FAILURE (XX:...)
         let dispMatch;
         DISPENSER_FAILURE_REGEX.lastIndex = 0;
         while ((dispMatch = DISPENSER_FAILURE_REGEX.exec(line)) !== null) {
           const codeNum = parseInt(dispMatch[1], 10);
           if (codeNum >= 1 && codeNum <= 99) {
             analysisData.codeErrors[codeNum] = (analysisData.codeErrors[codeNum] || 0) + 1;
-            lineMatched = true;
+            
+            if (!analysisData.dailyCodes[dateStr]) analysisData.dailyCodes[dateStr] = {};
+            analysisData.dailyCodes[dateStr][codeNum] = (analysisData.dailyCodes[dateStr][codeNum] || 0) + 1;
 
+            lineMatched = true;
             const codeInfo = MASTER_ERROR_MAP[codeNum] || { name: `UNKNOWN FAILURE (${codeNum})` };
             recordEvent(dateStr, 'code', codeNum, codeInfo.name, line, fileName);
           }
         }
 
-        // PARSE MONITORED KEYWORDS WITH SMART MATCHING
+        let keywordMatchedThisLine = false;
         KEYWORD_CONFIGS.forEach(config => {
+          if (keywordMatchedThisLine) return;
           const matchedKey = config.keys.find(k => lowerLine.includes(k.toLowerCase()));
           if (matchedKey) {
             analysisData.keywordErrors[config.displayKey] = (analysisData.keywordErrors[config.displayKey] || 0) + 1;
+
+            if (!analysisData.dailyKeywords[dateStr]) analysisData.dailyKeywords[dateStr] = {};
+            analysisData.dailyKeywords[dateStr][config.displayKey] = (analysisData.dailyKeywords[dateStr][config.displayKey] || 0) + 1;
+
             lineMatched = true;
+            keywordMatchedThisLine = true;
             recordEvent(dateStr, 'keyword', config.displayKey, config.name, line, fileName);
           }
         });
@@ -638,7 +655,15 @@
       for (const pattern of DATE_PATTERNS) {
         const match = str.match(pattern);
         if (match) {
-          return match[1].replace(/_/g, '-');
+          let rawDate = match[1].replace(/[/.]/g, '-');
+          if (/^\d{4}[-_]\d{2}[-_]\d{2}$/.test(rawDate)) {
+            return rawDate.replace(/_/g, '-');
+          }
+          const ddmmyyyy = rawDate.match(/^(\d{2})[-_](\d{2})[-_](\d{4})$/);
+          if (ddmmyyyy) {
+            return `${ddmmyyyy[3]}-${ddmmyyyy[2]}-${ddmmyyyy[1]}`;
+          }
+          return rawDate.replace(/_/g, '-');
         }
       }
       return null;
@@ -664,6 +689,7 @@
     function renderDashboard() {
       document.getElementById("statTotalEvents").innerText = analysisData.totalEvents.toLocaleString();
       document.getElementById("statLogFiles").innerText = analysisData.processedFileCount.toLocaleString();
+      document.getElementById("fileCountBadge").innerText = `${analysisData.processedFileCount} Log Files Analyzed`;
 
       const totalCodeHits = Object.values(analysisData.codeErrors).reduce((a, b) => a + b, 0);
       const totalKeywordHits = Object.values(analysisData.keywordErrors).reduce((a, b) => a + b, 0);
@@ -677,7 +703,7 @@
 
       renderErrorGrid();
       renderKeywordList();
-      renderDailyTableAndChart();
+      renderDailyBreakdownTables();
     }
 
     function renderErrorGrid() {
@@ -702,7 +728,7 @@
         grid.innerHTML = `
           <div class="col-span-full text-center py-12 text-slate-400">
             <i class="fa-solid fa-circle-check text-4xl mb-2 text-emerald-500 opacity-80"></i>
-            <p class="text-sm font-medium">No DISPENSER FAILURE codes detected in analyzed log files.</p>
+            <p class="text-sm font-medium">No verified DISPENSER FAILURE codes detected.</p>
           </div>
         `;
         return;
@@ -738,7 +764,6 @@
       });
     }
 
-    // RENDER MONITORED KEYWORDS AS INTERACTIVE CLICKABLE CARDS
     function renderKeywordList() {
       const container = document.getElementById("keywordList");
       container.innerHTML = "";
@@ -776,14 +801,17 @@
       });
     }
 
-    function renderDailyTableAndChart() {
-      const tbody = document.getElementById("dailyTableBody");
-      tbody.innerHTML = "";
+    function renderDailyBreakdownTables() {
+      const codeTbody = document.getElementById("dailyCodeTableBody");
+      const kwTbody = document.getElementById("dailyKeywordTableBody");
+      codeTbody.innerHTML = "";
+      kwTbody.innerHTML = "";
 
       const sortedDates = Object.keys(analysisData.dailyTrend).sort();
 
       if (sortedDates.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-xs text-slate-400">No dated records available.</td></tr>`;
+        codeTbody.innerHTML = `<tr><td colspan="3" class="text-center py-6 text-xs text-slate-400">No dated dispenser records available.</td></tr>`;
+        kwTbody.innerHTML = `<tr><td colspan="3" class="text-center py-6 text-xs text-slate-400">No dated keyword records available.</td></tr>`;
         updateChart([], [], []);
         return;
       }
@@ -793,20 +821,50 @@
       const keywordData = [];
 
       sortedDates.forEach(date => {
-        const day = analysisData.dailyTrend[date];
+        const dayTrend = analysisData.dailyTrend[date];
         chartLabels.push(date);
-        codeData.push(day.code || 0);
-        keywordData.push(day.keyword || 0);
+        codeData.push(dayTrend.code || 0);
+        keywordData.push(dayTrend.keyword || 0);
 
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-slate-50 transition-colors";
-        tr.innerHTML = `
-          <td class="px-4 py-3 font-semibold text-slate-900 text-xs">${date}</td>
-          <td class="px-4 py-3 text-indigo-600 font-medium">${day.code || 0}</td>
-          <td class="px-4 py-3 text-rose-600 font-medium">${day.keyword || 0}</td>
-          <td class="px-4 py-3 text-right font-bold text-slate-900">${day.total}</td>
+        // 1. Render Dispenser Code Table Row
+        const codesObj = analysisData.dailyCodes[date] || {};
+        const codeBadgesHtml = Object.entries(codesObj)
+          .sort((a,b) => b[1] - a[1])
+          .map(([cNum, cHits]) => {
+            const num = parseInt(cNum, 10);
+            const fmt = num < 10 ? `0${num}` : `${num}`;
+            return `<span class="inline-flex items-center gap-1 bg-indigo-50 text-indigo-800 border border-indigo-200 px-2 py-0.5 rounded text-[11px] font-semibold mr-1.5 mb-1">
+                      Code ${fmt}: <span class="bg-indigo-600 text-white px-1.5 py-0.2 rounded-full text-[10px]">${cHits}</span>
+                    </span>`;
+          }).join('') || '<span class="text-slate-400 italic">None</span>';
+
+        const codeTr = document.createElement("tr");
+        codeTr.className = "hover:bg-slate-50 transition-colors";
+        codeTr.innerHTML = `
+          <td class="px-3 py-3 font-semibold text-slate-900 text-xs">${date}</td>
+          <td class="px-3 py-3">${codeBadgesHtml}</td>
+          <td class="px-3 py-3 text-right font-bold text-indigo-600">${dayTrend.code || 0}</td>
         `;
-        tbody.appendChild(tr);
+        codeTbody.appendChild(codeTr);
+
+        // 2. Render Keyword Table Row
+        const kwObj = analysisData.dailyKeywords[date] || {};
+        const kwBadgesHtml = Object.entries(kwObj)
+          .sort((a,b) => b[1] - a[1])
+          .map(([kwKey, kwHits]) => {
+            return `<span class="inline-flex items-center gap-1 bg-rose-50 text-rose-800 border border-rose-200 px-2 py-0.5 rounded text-[11px] font-semibold mr-1.5 mb-1">
+                      ${kwKey}: <span class="bg-rose-600 text-white px-1.5 py-0.2 rounded-full text-[10px]">${kwHits}</span>
+                    </span>`;
+          }).join('') || '<span class="text-slate-400 italic">None</span>';
+
+        const kwTr = document.createElement("tr");
+        kwTr.className = "hover:bg-slate-50 transition-colors";
+        kwTr.innerHTML = `
+          <td class="px-3 py-3 font-semibold text-slate-900 text-xs">${date}</td>
+          <td class="px-3 py-3">${kwBadgesHtml}</td>
+          <td class="px-3 py-3 text-right font-bold text-rose-600">${dayTrend.keyword || 0}</td>
+        `;
+        kwTbody.appendChild(kwTr);
       });
 
       updateChart(chartLabels, codeData, keywordData);
@@ -960,26 +1018,22 @@
       
       setTimeout(() => {
         const demoLogs1 = `
-Line 27552 DISPENSER FAILURE (02:02NO NOTES DISPENSED)
-Line 27553 SWITCH CONN. FAILURE
-Line 27554 DISPENSER FAILURE (11:11NO NOTES DISPENSED)
-Line 27555 app level error
-Line 27556 E*2
+2026-10-30 08:15:10 DISPENSER FAILURE (02:02NO NOTES DISPENSED)
+2026-10-30 08:16:00 DISPENSER FAILURE (11:11CASH JAM)
+2026-10-30 09:20:11 SWITCH CONN. FAILURE
+2026-10-30 11:00:05 DISPENSER FAILURE (02:02NO NOTES DISPENSED)
         `;
         const demoLogs2 = `
-Line 1234 DISPENSER FAILURE (02:02NO NOTES DISPENSED)
-Line 1235 suspect-1
-Line 1236 ATR error
-Line 1237 DISPENSER FAILURE (56:56NO NOTES DISPENSED)
-Line 1238 DISPENSER FAILURE (69:FID A CARD REMOVE TIMEOUT)
-Line 1239 SWITCH CONN. FAILURE
-Line 1240 E*2
+2026-10-31 10:12:00 DISPENSER FAILURE (02:02NO NOTES DISPENSED)
+2026-10-31 11:05:00 DISPENSER FAILURE (53:CART COMM ERROR)
+2026-10-31 12:30:15 ATR error
+2026-10-31 14:05:22 SWITCH CONN. FAILURE
         `;
 
         resetDataStore();
         analysisData.processedFileCount = 2;
-        processLogContent(demoLogs1, "EJ_2026_09_17.log");
-        processLogContent(demoLogs2, "EJ_2026_09_18.log");
+        processLogContent(demoLogs1, "EJ_2026_10_30.log");
+        processLogContent(demoLogs2, "EJ_2026_10_31.log");
         showProcessing(false);
         renderDashboard();
       }, 350);
