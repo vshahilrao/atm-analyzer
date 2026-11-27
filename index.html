@@ -446,16 +446,16 @@
     };
 
     const KEYWORD_CONFIGS = [
-      { keys: ["switch conn failure", "switch conn. failure", "switch connection failure"], displayKey: "SWITCH CONN. FAILURE", name: "Switch Connection Failure", action: "Check network switch Ethernet patch cable. Verify ATM router signal, WAN connectivity, and switch IP routing." },
-      { keys: ["app level error"], displayKey: "app level error", name: "Application Level Error", action: "Inspect terminal application software logs. Restart ATM runtime middleware and re-verify session settings." },
+      { keys: ["switch conn failure", "switch conn. failure", "switch connection failure"], displayKey: "SWITCH CONN. FAILURE", name: "Switch Connection Failure", action: "Check network switch Ethernet patch cable. Verify ATM router signal, WAN connectivity, and switch IP routing. If thr connectivity okay then check from the switch end." },
+      { keys: ["app level error"], displayKey: "app level error", name: "Application Level Error", action: "Inspect terminal application software logs. Restart ATM runtime middleware and re-verify session settings. Update latest main application." },
       { keys: ["atr error"], displayKey: "ATR error", name: "Smart Card Reader ATR Error", action: "Check smart card test, if it getting fail, check the EMV pins condition. For any further support contact techteam." },
-      { keys: ["suspect - 1"], displayKey: "suspect - 1", name: "Suspect Banknote Detected (Path 1)", action: "Inspect suspect banknote divert bin. Recalibrate optical note validator/thickness sensors." },
-      { keys: ["suspect - 2"], displayKey: "suspect - 2", name: "Suspect Banknote Detected (Path 2)", action: "Inspect suspect banknote transport chute. Check optical sensor array for dust or alignment drift." },
+      { keys: ["suspect - 1"], displayKey: "suspect - 1", name: "Suspect Banknote Detected (Path 1)", action: "Inspect Cartridge clamp spring tension. Perform the init test and observe how the notes are dispensing by the CART into the purge." },
+      { keys: ["suspect - 2"], displayKey: "suspect - 2", name: "Suspect Banknote Detected (Path 2)", action: "Inspect shutter assembly. Perform the shutter open/close test. Observe the movement of the shutter open/close happening. If required apply thye lubricant on the shutter path. If required replace shutter motor sensor. Check optical sensor array for dust or alignment drift." },
       { keys: ["pin encryption failure"], displayKey: "pin encryption failure", name: "EPP PIN Encryption Failure", action: "Verify Encrypting PIN Pad (EPP) master key status. Check serial/USB connection to EPP board." },
-      { keys: ["switch resp-timeout", "switch response timeout"], displayKey: "switch resp-timeout", name: "Switch Response Timeout", action: "Check host network latency. Inspect host gateway parameters and router firewall socket connections." },
+      { keys: ["switch resp-timeout", "switch response timeout"], displayKey: "switch resp-timeout", name: "Switch Response Timeout", action: "To getting success of Transaction from the switch there is no response. That need to inspect by switch team, reason for the TXN decline." },
       { keys: ["too many present error"], displayKey: "TOO MANY PRESENT ERROR", name: "too many present error", action: "Check shutter present sensor, cable connection." },
       { keys: ["cardreader failure - response_error"], displayKey: "CARDREADER FAILURE - RESPONSE_ERROR", name: "CARDREADER FAILURE - RESPONSE_ERROR", action: "Check card reader pcb board sensor, cable connection." },
-      { keys: ["command reject"], displayKey: "command reject", name: "Command Rejected by Peripheral", action: "Verify device driver protocol compatibility. Re-send command sequence or perform module reset." },
+      { keys: ["command reject"], displayKey: "command reject", name: "Command Rejected by Peripheral", action: "Verify the ignore ARC value. The Arc value should be 2. If it is 0 then execute the ARC value command, change the value 0-2." },
       { keys: ["power cycle"], displayKey: "POWER CYCLE", name: "Power cycle Happened", action: "The reason for the power cycle that happened, as it may have been caused by an abrupt power failure or manual intervention." },
       { keys: ["e*2"], displayKey: "E*2", name: "E*2 Communication Fault", action: "Inspect hardware module interface and E*2 line communication protocol for corrupted packet transmissions." }
     ];
